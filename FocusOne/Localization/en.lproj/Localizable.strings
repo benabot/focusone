@@ -1,0 +1,113 @@
+"tab.home" = "Home";
+"tab.stats" = "Stats";
+"tab.settings" = "Settings";
+
+"notifications.body" = "Small step, big momentum.";
+
+"home.title" = "Today's focus";
+"home.no_habit" = "No active habit yet.";
+"home.today.done" = "Today: Done";
+"home.today.not_done" = "Today: Not done";
+"home.today.label" = "Today";
+"home.today.state.done" = "Done";
+"home.today.state.not_done" = "Not done";
+"home.current_streak" = "Current streak";
+"home.best_streak" = "Best streak";
+"home.next_reminder.none" = "No reminder";
+"home.edit" = "Edit";
+"home.done.button.off" = "Done";
+"home.done.button.on" = "Done today";
+"home.today.short" = "Today";
+"home.best.short" = "Best";
+"home.streak.row.one" = "day in a row";
+"home.streak.row.other" = "days in a row";
+
+"splash.title" = "FocusOne";
+"splash.subtitle" = "Less is more. One routine. Zero friction.";
+"splash.bullet.one" = "One tap a day";
+"splash.bullet.two" = "A clear streak";
+
+"intro.tagline" = "One micro-habit. Zero friction.";
+"intro.bullet.one" = "• One tap a day";
+"intro.bullet.two" = "• Clear streak";
+"intro.get_started" = "Get started";
+"intro.continue" = "Continue";
+"intro.already_habit" = "I already have a habit";
+"intro.skip" = "Skip";
+
+"onboarding.title" = "Create a mini routine";
+"onboarding.subtitle" = "One routine. Keep it simple.";
+"onboarding.subtitle_secondary" = "";
+"onboarding.configuration" = "Configuration";
+"onboarding.edit_subtitle" = "Adjust your routine.";
+"onboarding.edit_subtitle_secondary" = "";
+"onboarding.habit_section" = "Name";
+"onboarding.name_placeholder" = "Habit name";
+"onboarding.icon" = "Icon";
+"onboarding.theme" = "Theme";
+"onboarding.preferences" = "Preferences";
+"onboarding.reminders" = "Reminders";
+"onboarding.day_label" = "Day";
+"onboarding.manage" = "Manage";
+"onboarding.reminders.summary.none" = "None";
+"onboarding.reminders.summary.one" = "1";
+"onboarding.reminders.summary.many" = "%d";
+"onboarding.reminders.row" = "Reminders: %@";
+"onboarding.day_start.row" = "Day starts: %@";
+"onboarding.day_start" = "Day starts at";
+"onboarding.reminder" = "Reminder";
+"onboarding.add_reminder" = "Add reminder";
+"onboarding.start" = "Start";
+"onboarding.save" = "Save";
+"onboarding.cancel" = "Cancel";
+"onboarding.error.name_required" = "Please enter a habit name.";
+"onboarding.error.no_active_habit" = "No active habit to edit.";
+
+"stats.title" = "Stats";
+"stats.current" = "Current";
+"stats.last7" = "7 days";
+"stats.last30" = "30 days";
+"stats.best" = "Best";
+"stats.percent.format" = "%d%%";
+
+"settings.title" = "Settings";
+"settings.notifications" = "Notifications";
+"settings.reminder" = "Reminder";
+"settings.add_reminder" = "Add reminder";
+"settings.day_start" = "Day starts at";
+"settings.theme" = "Theme";
+"settings.icloud" = "iCloud";
+"settings.icloud.placeholder" = "CloudKit enabled when iCloud capability is active.";
+"settings.premium" = "Premium";
+"settings.open_paywall" = "See Premium";
+
+"paywall.title" = "FocusOne Premium";
+"paywall.subtitle" = "Unlock more habits, richer history, and advanced widgets.";
+"paywall.cta" = "Coming soon";
+"paywall.benefit.1" = "Unlimited habits (still one active at a time).";
+"paywall.benefit.2" = "Full history beyond 30 days.";
+"paywall.benefit.3" = "Habit cycles and archives.";
+"paywall.benefit.4" = "Advanced widgets and themes.";
+
+"widget.title" = "FocusOne";
+"widget.description" = "Track your daily streak at a glance.";
+"widget.done" = "Done";
+"widget.not_done" = "Not done";
+
+"theme.sunrise" = "Sunrise";
+"theme.mango" = "Mango";
+"theme.mint" = "Mint";
+"theme.lagoon" = "Lagoon";
+"theme.berry" = "Berry";
+"theme.violet" = "Violet";
+"theme.coral" = "Coral";
+"theme.forest" = "Forest";
+
+"time.hour.format" = "%02d:00";
+
+"common.remove" = "Remove";
+"common.close" = "Close";
+"common.cta.start" = "Start";
+"common.cta.get_started" = "Get started";
+"common.cta.continue" = "Continue";
+"common.cta.skip" = "Skip";

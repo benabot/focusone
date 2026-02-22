@@ -1,0 +1,113 @@
+"tab.home" = "Accueil";
+"tab.stats" = "Stats";
+"tab.settings" = "Réglages";
+
+"notifications.body" = "Un petit pas aujourd'hui, un grand élan demain.";
+
+"home.title" = "Focus du jour";
+"home.no_habit" = "Aucune habitude active.";
+"home.today.done" = "Aujourd'hui : fait";
+"home.today.not_done" = "Aujourd'hui : pas encore";
+"home.today.label" = "Aujourd'hui";
+"home.today.state.done" = "Fait";
+"home.today.state.not_done" = "Pas fait";
+"home.current_streak" = "Série en cours";
+"home.best_streak" = "Meilleure série";
+"home.next_reminder.none" = "Aucun rappel";
+"home.edit" = "Modifier";
+"home.done.button.off" = "Fait";
+"home.done.button.on" = "Fait aujourd'hui";
+"home.today.short" = "Aujourd'hui";
+"home.best.short" = "Meilleur";
+"home.streak.row.one" = "jour d'affilée";
+"home.streak.row.other" = "jours d'affilée";
+
+"splash.title" = "FocusOne";
+"splash.subtitle" = "Less is more. Une seule routine. Zéro friction.";
+"splash.bullet.one" = "Un geste par jour";
+"splash.bullet.two" = "Un streak clair";
+
+"intro.tagline" = "Une seule micro-habitude. Sans friction.";
+"intro.bullet.one" = "• Un geste par jour";
+"intro.bullet.two" = "• Streak clair";
+"intro.get_started" = "Commencer";
+"intro.continue" = "Continuer";
+"intro.already_habit" = "J’ai déjà une habitude";
+"intro.skip" = "Passer";
+
+"onboarding.title" = "Crée une mini routine";
+"onboarding.subtitle" = "Une seule routine. Garde ça simple.";
+"onboarding.subtitle_secondary" = "";
+"onboarding.configuration" = "Configuration";
+"onboarding.edit_subtitle" = "Ajuste ta routine.";
+"onboarding.edit_subtitle_secondary" = "";
+"onboarding.habit_section" = "Nom";
+"onboarding.name_placeholder" = "Nom de l'habitude";
+"onboarding.icon" = "Icône";
+"onboarding.theme" = "Thème";
+"onboarding.preferences" = "Préférences";
+"onboarding.reminders" = "Rappels";
+"onboarding.day_label" = "Journée";
+"onboarding.manage" = "Gérer";
+"onboarding.reminders.summary.none" = "Aucun";
+"onboarding.reminders.summary.one" = "1";
+"onboarding.reminders.summary.many" = "%d";
+"onboarding.reminders.row" = "Rappels : %@";
+"onboarding.day_start.row" = "Journée : %@";
+"onboarding.day_start" = "La journée commence à";
+"onboarding.reminder" = "Rappel";
+"onboarding.add_reminder" = "Ajouter un rappel";
+"onboarding.start" = "Démarrer";
+"onboarding.save" = "Enregistrer";
+"onboarding.cancel" = "Annuler";
+"onboarding.error.name_required" = "Saisis un nom d'habitude.";
+"onboarding.error.no_active_habit" = "Aucune habitude active à modifier.";
+
+"stats.title" = "Statistiques";
+"stats.current" = "En cours";
+"stats.last7" = "7 jours";
+"stats.last30" = "30 jours";
+"stats.best" = "Meilleure";
+"stats.percent.format" = "%d%%";
+
+"settings.title" = "Réglages";
+"settings.notifications" = "Notifications";
+"settings.reminder" = "Rappel";
+"settings.add_reminder" = "Ajouter un rappel";
+"settings.day_start" = "La journée commence à";
+"settings.theme" = "Thème";
+"settings.icloud" = "iCloud";
+"settings.icloud.placeholder" = "CloudKit actif quand la capability iCloud est configurée.";
+"settings.premium" = "Premium";
+"settings.open_paywall" = "Voir Premium";
+
+"paywall.title" = "FocusOne Premium";
+"paywall.subtitle" = "Débloque plus d'habitudes, un historique complet et des widgets avancés.";
+"paywall.cta" = "Bientôt disponible";
+"paywall.benefit.1" = "Habitudes illimitées (toujours 1 active à la fois).";
+"paywall.benefit.2" = "Historique complet au-delà de 30 jours.";
+"paywall.benefit.3" = "Cycles d'habitudes et archives.";
+"paywall.benefit.4" = "Widgets et thèmes avancés.";
+
+"widget.title" = "FocusOne";
+"widget.description" = "Consulte ta série quotidienne en un coup d'œil.";
+"widget.done" = "Fait";
+"widget.not_done" = "Pas fait";
+
+"theme.sunrise" = "Aurore";
+"theme.mango" = "Mangue";
+"theme.mint" = "Menthe";
+"theme.lagoon" = "Lagon";
+"theme.berry" = "Baie";
+"theme.violet" = "Violet";
+"theme.coral" = "Corail";
+"theme.forest" = "Forêt";
+
+"time.hour.format" = "%02d:00";
+
+"common.remove" = "Supprimer";
+"common.close" = "Fermer";
+"common.cta.start" = "Démarrer";
+"common.cta.get_started" = "Commencer";
+"common.cta.continue" = "Continuer";
+"common.cta.skip" = "Passer";

@@ -1,0 +1,51 @@
+name: FocusOne
+options:
+  bundleIdPrefix: com.benoit
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    IPHONEOS_DEPLOYMENT_TARGET: 17.0
+    SWIFT_VERSION: 5.9
+
+targets:
+  FocusOne:
+    type: application
+    platform: iOS
+    sources:
+      - path: FocusOne
+      - path: Widgets/WidgetDataStore.swift
+        buildPhase: sources
+    resources:
+      - path: FocusOne/Persistence/Model.xcdatamodeld
+      - path: FocusOne/Localization
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.benoit.focusone
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: FocusOne
+        CODE_SIGN_ENTITLEMENTS: FocusOne/Resources/FocusOne.entitlements
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 0.1.0
+    dependencies:
+      - target: FocusOneWidget
+
+  FocusOneWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widgets
+      - path: FocusOne/App/AppConfig.swift
+        buildPhase: sources
+      - path: FocusOne/Domain/Services/Localization.swift
+        buildPhase: sources
+    resources:
+      - path: FocusOne/Localization
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.benoit.focusone.widget
+        INFOPLIST_FILE: FocusOneWidget/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: FocusOneWidget/FocusOneWidget.entitlements
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 0.1.0

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23414" systemVersion="23F79" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithCloudKit="YES">
+    <entity name="HabitEntity" representedClassName="HabitEntity" syncable="YES" codeGenerationType="none">
+        <attribute name="id" attributeType="UUID" optional="YES"/>
+        <attribute name="name" attributeType="String" optional="YES"/>
+        <attribute name="icon" attributeType="String" optional="YES"/>
+        <attribute name="colorHex" attributeType="String" optional="YES"/>
+        <attribute name="startDate" attributeType="Date" optional="YES"/>
+        <attribute name="dayStartHour" attributeType="Integer 16" optional="NO" defaultValueString="4"/>
+        <attribute name="reminderTimes" attributeType="String" optional="YES"/>
+        <attribute name="isActive" attributeType="Boolean" optional="NO" defaultValueString="YES"/>
+    </entity>
+    <entity name="CompletionEntity" representedClassName="CompletionEntity" syncable="YES" codeGenerationType="none">
+        <attribute name="id" attributeType="UUID" optional="YES"/>
+        <attribute name="habitId" attributeType="UUID" optional="YES"/>
+        <attribute name="dayKey" attributeType="Date" optional="YES"/>
+        <attribute name="timestamp" attributeType="Date" optional="YES"/>
+    </entity>
+    <entity name="CycleEntity" representedClassName="CycleEntity" syncable="YES" codeGenerationType="none">
+        <attribute name="id" attributeType="UUID" optional="YES"/>
+        <attribute name="habitId" attributeType="UUID" optional="YES"/>
+        <attribute name="cycleStart" attributeType="Date" optional="YES"/>
+        <attribute name="cycleEnd" attributeType="Date" optional="YES"/>
+        <attribute name="status" attributeType="String" optional="YES"/>
+    </entity>
+</model>
