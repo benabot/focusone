@@ -48,6 +48,36 @@ struct FocusOneWidgetEntryView: View {
         let accent = Color(widgetHex: entry.snapshot.themeHex)
 
         switch family {
+        case .systemMedium:
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(accent.opacity(0.2))
+                    VStack(spacing: 8) {
+                        Image(systemName: entry.snapshot.doneToday ? "checkmark.circle.fill" : entry.snapshot.iconSymbol)
+                            .font(.system(size: 30, weight: .semibold))
+                            .foregroundStyle(accent)
+                        Text(entry.snapshot.habitName)
+                            .font(.headline)
+                            .lineLimit(1)
+                    }
+                    .padding(12)
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(L10n.streakDays(entry.snapshot.currentStreak))
+                        .font(.title3.weight(.semibold))
+                    HStack(spacing: 6) {
+                        Image(systemName: entry.snapshot.doneToday ? "checkmark.circle.fill" : "circle")
+                        Text(entry.snapshot.doneToday ? L10n.text("widget.done") : L10n.text("widget.not_done"))
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(entry.snapshot.doneToday ? accent : .secondary)
+                    Spacer(minLength: 0)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(12)
+            .containerBackground(accent.opacity(0.15), for: .widget)
         case .accessoryCircular:
             ZStack {
                 Circle().fill(accent.opacity(0.25))
@@ -106,7 +136,7 @@ struct FocusOneWidget: Widget {
         }
         .configurationDisplayName(L10n.text("widget.title"))
         .description(L10n.text("widget.description"))
-        .supportedFamilies([.systemSmall, .accessoryRectangular, .accessoryCircular])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryRectangular, .accessoryCircular])
     }
 }
 

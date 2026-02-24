@@ -21,6 +21,8 @@
             <key>WidgetFamily</key>
             <array>
                 <string>systemSmall</string>
+                <string>systemMedium</string>
+                <string>systemLarge</string>
                 <string>accessoryRectangular</string>
                 <string>accessoryCircular</string>
             </array>

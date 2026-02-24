@@ -20,11 +20,14 @@ targets:
     resources:
       - path: FocusOne/Persistence/Model.xcdatamodeld
       - path: FocusOne/Localization
+      - path: FocusOne/Resources/Assets.xcassets
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.benoit.focusone
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: FocusOne
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: FocusOne/Resources/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SKIP_INSTALL: NO
         CODE_SIGN_ENTITLEMENTS: FocusOne/Resources/FocusOne.entitlements
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: 0.1.0
@@ -45,7 +48,31 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.benoit.focusone.widget
+        GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: FocusOneWidget/Resources/Info.plist
+        SKIP_INSTALL: YES
         CODE_SIGN_ENTITLEMENTS: FocusOneWidget/FocusOneWidget.entitlements
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: 0.1.0
+
+schemes:
+  FocusOne:
+    shared: true
+    build:
+      targets:
+        FocusOne: all
+        FocusOneWidget:
+          - build
+    run:
+      config: Debug
+      executable: FocusOne
+  FocusOneWidget:
+    shared: true
+    build:
+      targets:
+        FocusOne: all
+        FocusOneWidget:
+          - build
+    run:
+      config: Debug
+      executable: FocusOne

@@ -16,6 +16,7 @@
 		29B756B4955D9CA0B944183A /* StreakEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBE2522547D43227F2488788 /* StreakEngine.swift */; };
 		2C037D65FC2006A1710D1E57 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D6282E2767F699CE2E02075 /* PersistenceController.swift */; };
 		2DB1187393B9351208D3EF02 /* FocusOneWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8BF551B978609B53AB3D2EF /* FocusOneWidget.swift */; };
+		316312F5C85FC56BE9234268 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 255B7481F3F1187FA2290731 /* Assets.xcassets */; };
 		3315E6B4F82CB7BD3F2ACE46 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 154C10C42F282FF90F13662C /* AppRouter.swift */; };
 		3DC7867747D297188EC842F0 /* PremiumGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E68DBABE69C6C8B0B4AC3FF6 /* PremiumGate.swift */; };
 		446303425AF4EDA4FCF8DC09 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FF6390060191330879D5A5A /* SettingsView.swift */; };
@@ -80,6 +81,7 @@
 		0E8D8A203EA75AED5A6CE0CC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		154C10C42F282FF90F13662C /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
 		230E623BA8E94532E0FF4F5B /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
+		255B7481F3F1187FA2290731 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		28EF1F43B7F5D39D431A4F71 /* HabitEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitEntity.swift; sourceTree = "<group>"; };
 		2D6282E2767F699CE2E02075 /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		410D9A94C880A7AC3CEFCEA6 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -249,6 +251,7 @@
 		8983F4FA521A3495D89F304D /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				255B7481F3F1187FA2290731 /* Assets.xcassets */,
 				AD10F5F101F3C1688FDBC8F6 /* FocusOne.entitlements */,
 				0E8D8A203EA75AED5A6CE0CC /* Info.plist */,
 			);
@@ -395,6 +398,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				316312F5C85FC56BE9234268 /* Assets.xcassets in Resources */,
 				210AA046FB3A6EB041498EA9 /* Localizable.strings in Resources */,
 				D64D9E33DC889B2F7FC1BD5C /* Localizable.stringsdict in Resources */,
 			);
@@ -613,9 +617,8 @@
 				CODE_SIGN_ENTITLEMENTS = FocusOne/Resources/FocusOne.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FocusOne/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = FocusOne;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -623,6 +626,7 @@
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.benoit.focusone;
 				SDKROOT = iphoneos;
+				SKIP_INSTALL = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -632,6 +636,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = FocusOneWidget/FocusOneWidget.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FocusOneWidget/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -641,6 +646,7 @@
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.benoit.focusone.widget;
 				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -650,6 +656,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = FocusOneWidget/FocusOneWidget.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FocusOneWidget/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -659,6 +666,7 @@
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.benoit.focusone.widget;
 				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -670,9 +678,8 @@
 				CODE_SIGN_ENTITLEMENTS = FocusOne/Resources/FocusOne.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FocusOne/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = FocusOne;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -680,6 +687,7 @@
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.benoit.focusone;
 				SDKROOT = iphoneos;
+				SKIP_INSTALL = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
