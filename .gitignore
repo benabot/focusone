@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+
+# Xcode user data
+xcuserdata/
+*.xcuserdatad/
+*.xcuserstate
+
+# Build output
+build/
+DerivedData/
+
+# Archives & distribution
+*.ipa
+*.dSYM
+*.dSYM.zip
+
+# SPM
+.build/
