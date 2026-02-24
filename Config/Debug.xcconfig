@@ -1,0 +1,7 @@
+#include "Base.xcconfig"
+
+PRODUCT_BUNDLE_IDENTIFIER = com.benoit.focusone.dev
+CODE_SIGN_STYLE = Automatic
+// DEVELOPMENT_TEAM = XXXXXXXXXX  ← Xcode will fill this automatically
+DEBUG_INFORMATION_FORMAT = dwarf
+SWIFT_OPTIMIZATION_LEVEL = -Onone
