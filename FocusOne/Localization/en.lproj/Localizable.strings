@@ -19,6 +19,10 @@
 "home.done.button.on" = "Done today";
 "home.today.short" = "Today";
 "home.best.short" = "Best";
+"home.streak.label" = "Streak";
+"home.streak.unit.one" = "day";
+"home.streak.unit.other" = "days";
+"home.streak.keep_going" = "Keep it up! 🔥";
 "home.streak.row.one" = "day in a row";
 "home.streak.row.other" = "days in a row";
 

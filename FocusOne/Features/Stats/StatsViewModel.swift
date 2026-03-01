@@ -10,6 +10,7 @@ final class StatsViewModel: ObservableObject {
     @Published var bestStreak: Int = 0
     @Published var monthTitle = ""
     @Published var habitIconSymbol: String?
+    @Published var themeHex: String?
 
     private let context: NSManagedObjectContext
     private let streakEngine: StreakEngine
@@ -30,6 +31,7 @@ final class StatsViewModel: ObservableObject {
 
         let habit = entity.toDomain()
         habitIconSymbol = habit.iconSymbol
+        themeHex = habit.colorHex
         let completions = repository.fetchCompletions(habitId: habit.id)
 
         currentStreak = streakEngine.currentStreak(habit: habit, completions: completions)

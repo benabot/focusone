@@ -3,62 +3,57 @@ import SwiftUI
 struct AppRouter: View {
     @Environment(\.managedObjectContext) private var context
     @AppStorage(AppStorageKeys.hasOnboarded) private var hasOnboarded = false
-    @State private var hasActiveHabit = false
-    @State private var route: Route = .splash
 
     private enum Route: Equatable {
+        case loading
         case splash
         case onboarding
         case mainTabs
     }
 
+    @State private var route: Route = .loading
+
     var body: some View {
         Group {
             switch route {
+            case .loading:
+                Color.clear
+                    .onAppear(perform: resolveRoute)
+
             case .splash:
                 SplashView(
-                    hasActiveHabit: hasActiveHabit,
-                    onPrimaryAction: handleSplashAction,
-                    onSecondaryAction: handleSplashAction
+                    hasActiveHabit: false,
+                    onPrimaryAction: { route = .onboarding },
+                    onSecondaryAction: { route = .onboarding }
                 )
+
             case .onboarding:
                 OnboardingView(
                     context: context,
                     mode: .create
                 ) {
                     hasOnboarded = true
-                    reload()
-                    route = hasActiveHabit ? .mainTabs : .splash
+                    route = .mainTabs
                 } onCancel: {
-                    route = .splash
+                    route = hasOnboarded ? .mainTabs : .splash
                 }
+
             case .mainTabs:
                 mainTabs
             }
         }
-        .onAppear {
-            reload()
+    }
+
+    private func resolveRoute() {
+        let hasHabit = HabitRepository(context: context).fetchActiveHabit() != nil
+        if hasHabit {
+            route = .mainTabs
+        } else if hasOnboarded {
+            // already onboarded but habit was deleted — back to onboarding
+            route = .onboarding
+        } else {
             route = .splash
         }
-        .onChange(of: hasActiveHabit) {
-            if route == .mainTabs || route == .splash {
-                return
-            }
-            route = hasActiveHabit ? .mainTabs : .splash
-        }
-    }
-
-    private func handleSplashAction() {
-        if hasActiveHabit {
-            hasOnboarded = true
-            route = .mainTabs
-        } else {
-            route = .onboarding
-        }
-    }
-
-    private func reload() {
-        hasActiveHabit = HabitRepository(context: context).fetchActiveHabit() != nil
     }
 
     private var mainTabs: some View {

@@ -10,6 +10,12 @@ enum L10n {
         return String.localizedStringWithFormat(format, count)
     }
 
+    static func streakUnit(_ count: Int) -> String {
+        count == 1
+            ? NSLocalizedString("home.streak.unit.one", comment: "")
+            : NSLocalizedString("home.streak.unit.other", comment: "")
+    }
+
     static func streakInARowLabel(_ count: Int) -> String {
         if count == 1 {
             return NSLocalizedString("home.streak.row.one", comment: "")

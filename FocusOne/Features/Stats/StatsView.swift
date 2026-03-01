@@ -10,129 +10,217 @@ struct StatsView: View {
     }
 
     var body: some View {
+        let preset = Theme.preset(for: viewModel.themeHex ?? Theme.defaultThemeHex)
+
         ZStack {
-            Theme.backgroundGradient(for: Theme.presets[3], scheme: colorScheme).ignoresSafeArea()
+            Theme.backgroundGradient(for: preset, scheme: colorScheme)
+                .ignoresSafeArea()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: Theme.spacing) {
+                VStack(alignment: .leading, spacing: 24) {
                     header
-                    streakHero
-                    ratesRow
-                    monthSection
+                    streakCards(preset: preset)
+                    ratesRow(preset: preset)
+                    monthSection(preset: preset)
                 }
-                .padding(Theme.padding)
+                .padding(.horizontal, Theme.padding)
+                .padding(.top, 20)
+                .padding(.bottom, 40)
             }
         }
         .onAppear(perform: viewModel.load)
     }
 
+    // MARK: — Header
+
     private var header: some View {
         HStack(spacing: Theme.spacingS) {
             if let symbol = viewModel.habitIconSymbol {
                 Image(systemName: symbol)
-                    .font(.system(size: 24, weight: .semibold))
+                    .font(.system(size: 22, weight: .semibold))
                     .foregroundStyle(Theme.textPrimary(for: colorScheme))
             }
-
             Text(L10n.text("stats.title"))
                 .font(.system(size: 34, weight: .bold, design: .rounded))
                 .foregroundStyle(Theme.textPrimary(for: colorScheme))
         }
     }
 
-    private var streakHero: some View {
-        HStack(spacing: Theme.spacingM) {
-            streakMetric(
+    // MARK: — Streak cards side-by-side
+
+    private func streakCards(preset: ThemePreset) -> some View {
+        HStack(spacing: 12) {
+            streakCard(
                 title: L10n.text("stats.current"),
-                value: "\(viewModel.currentStreak)",
-                tone: Theme.textPrimary(for: colorScheme)
+                value: viewModel.currentStreak,
+                isPrimary: true,
+                preset: preset
             )
-
-            streakMetric(
+            streakCard(
                 title: L10n.text("stats.best"),
-                value: "\(viewModel.bestStreak)",
-                tone: Theme.textSecondary(for: colorScheme)
+                value: viewModel.bestStreak,
+                isPrimary: false,
+                preset: preset
             )
         }
     }
 
-    private var ratesRow: some View {
-        HStack(spacing: Theme.spacingS) {
-            ratePill(title: L10n.text("stats.last7"), value: L10n.completionPercent(viewModel.completionRate7))
-            ratePill(title: L10n.text("stats.last30"), value: L10n.completionPercent(viewModel.completionRate30))
+    private func streakCard(title: String, value: Int, isPrimary: Bool, preset: ThemePreset) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .foregroundStyle(
+                    isPrimary
+                        ? Color(hex: preset.primaryHex).opacity(0.8)
+                        : Theme.textSecondary(for: colorScheme)
+                )
+                .textCase(.uppercase)
+                .kerning(0.5)
+
+            Text("\(value)")
+                .font(.system(size: 52, weight: .heavy, design: .rounded))
+                .foregroundStyle(
+                    isPrimary
+                        ? Theme.textPrimary(for: colorScheme)
+                        : Theme.textSecondary(for: colorScheme)
+                )
+                .contentTransition(.numericText())
+                .animation(.spring(response: 0.4, dampingFraction: 0.7), value: value)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(
+                    isPrimary
+                        ? Color(hex: preset.primaryHex).opacity(colorScheme == .dark ? 0.22 : 0.13)
+                        : Color.white.opacity(colorScheme == .dark ? 0.1 : 0.5)
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(
+                    isPrimary
+                        ? Color(hex: preset.primaryHex).opacity(colorScheme == .dark ? 0.2 : 0.1)
+                        : Color.clear,
+                    lineWidth: 1
+                )
+        )
+    }
+
+    // MARK: — Rates
+
+    private func ratesRow(preset: ThemePreset) -> some View {
+        HStack(spacing: 12) {
+            ratePill(
+                title: L10n.text("stats.last7"),
+                value: L10n.completionPercent(viewModel.completionRate7),
+                preset: preset
+            )
+            ratePill(
+                title: L10n.text("stats.last30"),
+                value: L10n.completionPercent(viewModel.completionRate30),
+                preset: preset
+            )
         }
     }
 
-    private var monthSection: some View {
-        VStack(alignment: .leading, spacing: Theme.spacingS) {
+    private func ratePill(title: String, value: String, preset: ThemePreset) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                .textCase(.uppercase)
+                .kerning(0.4)
+
+            Text(value)
+                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .foregroundStyle(Theme.textPrimary(for: colorScheme))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.white.opacity(colorScheme == .dark ? 0.1 : 0.5))
+        )
+    }
+
+    // MARK: — Month grid
+
+    private func monthSection(preset: ThemePreset) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
             Text(viewModel.monthTitle)
                 .font(.system(size: 18, weight: .semibold, design: .rounded))
                 .foregroundStyle(Theme.textPrimary(for: colorScheme))
 
-            MonthGrid(days: viewModel.monthDays, colorScheme: colorScheme)
+            MonthGrid(days: viewModel.monthDays, preset: preset, colorScheme: colorScheme)
         }
-    }
-
-    private func streakMetric(title: String, value: String, tone: Color) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title)
-                .font(.system(size: 13, weight: .semibold, design: .rounded))
-                .foregroundStyle(Theme.textSecondary(for: colorScheme))
-
-            Text(value)
-                .font(.system(size: 48, weight: .heavy, design: .rounded))
-                .foregroundStyle(tone)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func ratePill(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.system(size: 13, weight: .semibold, design: .rounded))
-                .foregroundStyle(Theme.textSecondary(for: colorScheme))
-
-            Text(value)
-                .font(.system(size: 17, weight: .bold, design: .rounded))
-                .foregroundStyle(Theme.textPrimary(for: colorScheme))
-        }
-        .padding(.horizontal, Theme.spacingM)
-        .padding(.vertical, Theme.spacingS)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white.opacity(colorScheme == .dark ? 0.16 : 0.62))
-        )
     }
 }
 
+// MARK: — Month grid component
+
 private struct MonthGrid: View {
     let days: [MonthGridDay]
+    let preset: ThemePreset
     let colorScheme: ColorScheme
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 7)
+    private let weekLetters = ["L", "M", "M", "J", "V", "S", "D"]
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
 
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 8) {
-            ForEach(days) { day in
-                Text("\(day.dayNumber)")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(
-                        day.isCurrentMonth
-                            ? Theme.textPrimary(for: colorScheme)
-                            : Theme.textSecondary(for: colorScheme).opacity(0.4)
-                    )
-                    .frame(maxWidth: .infinity, minHeight: 34)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(
-                                day.isCompleted
-                                    ? Color(hex: Theme.defaultThemeHex).opacity(0.92)
-                                    : Color.white.opacity(colorScheme == .dark ? 0.08 : 0.42)
-                            )
-                    )
+        VStack(spacing: 8) {
+            // Weekday headers
+            LazyVGrid(columns: columns, spacing: 6) {
+                ForEach(weekLetters, id: \.self) { letter in
+                    Text(letter)
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(Theme.textSecondary(for: colorScheme).opacity(0.6))
+                        .frame(maxWidth: .infinity)
+                }
+            }
+
+            // Day cells
+            LazyVGrid(columns: columns, spacing: 6) {
+                ForEach(days) { day in
+                    dayCell(day)
+                }
             }
         }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color.white.opacity(colorScheme == .dark ? 0.07 : 0.45))
+        )
+    }
+
+    @ViewBuilder
+    private func dayCell(_ day: MonthGridDay) -> some View {
+        let textColor: Color = {
+            if !day.isCurrentMonth { return Theme.textSecondary(for: colorScheme).opacity(0.25) }
+            if day.isCompleted { return .white }
+            return Theme.textPrimary(for: colorScheme)
+        }()
+
+        let background: Color = {
+            if day.isCompleted { return Color(hex: preset.primaryHex) }
+            if day.isCurrentMonth { return Color.white.opacity(colorScheme == .dark ? 0.07 : 0.35) }
+            return .clear
+        }()
+
+        Text("\(day.dayNumber)")
+            .font(.system(size: 13, weight: day.isCompleted ? .bold : .regular, design: .rounded))
+            .foregroundStyle(textColor)
+            .frame(maxWidth: .infinity, minHeight: 32)
+            .background(
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(background)
+                    .shadow(
+                        color: day.isCompleted ? Color(hex: preset.primaryHex).opacity(0.35) : .clear,
+                        radius: 4, x: 0, y: 2
+                    )
+            )
     }
 }
 

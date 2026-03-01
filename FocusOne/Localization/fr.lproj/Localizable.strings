@@ -19,6 +19,10 @@
 "home.done.button.on" = "Fait aujourd'hui";
 "home.today.short" = "Aujourd'hui";
 "home.best.short" = "Meilleur";
+"home.streak.label" = "Série";
+"home.streak.unit.one" = "jour";
+"home.streak.unit.other" = "jours";
+"home.streak.keep_going" = "Continue comme ça ! 🔥";
 "home.streak.row.one" = "jour d'affilée";
 "home.streak.row.other" = "jours d'affilée";
 

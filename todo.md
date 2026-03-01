@@ -83,5 +83,14 @@
 - Test 0/1/2 reminders scheduling.
 - Note: local notifications are more reliable on real device than simulator.
 
+## Fixed
+- [x] App apparaît 2x sur l'écran d'accueil : bundle ID Debug aligné sur Release (`com.benoit.focusone`). Widget idem.
+- [x] AppRouter refactorisé : routing simplifié, plus de double setState en `onAppear`.
+- [x] HomeView redesign : streak card avec gradient + blobs, meta pills, reminder chip, topBar icône.
+- [x] DoneToggleButton : animation press + sparkle + shadow dynamique + état outlined/filled.
+- [x] StatsView : streak cards colorées par thème, grille calendrier avec jours de la semaine, couleur preset.
+- [x] StatsViewModel : expose `themeHex` pour que StatsView adapte les couleurs.
+- [x] L10n : ajout `streakUnit`, `home.streak.label`, `home.streak.keep_going` EN + FR.
+
 ## Later
 - Keep `PremiumGate` as feature-flag layer and add StoreKit purchase flow.
