@@ -10,28 +10,34 @@ struct StatsView: View {
         _viewModel = StateObject(wrappedValue: StatsViewModel(context: context))
     }
 
-    private var preset: ThemePreset {
-        Theme.preset(for: viewModel.themeHex ?? Theme.defaultThemeHex)
-    }
+    private var preset: ThemePreset { Theme.preset(for: viewModel.themeHex ?? Theme.defaultThemeHex) }
+
+    // Mock data budget
+    private let monthlyData: [(String, Double, Double)] = [
+        ("Sep", 3200, 4100), ("Oct", 4800, 5200), ("Nov", 2900, 3800),
+        ("Déc", 5100, 6000), ("Jan", 3700, 4500), ("Fév", 4200, 5800)
+    ]
+    private let categories: [(String, Double, String, String)] = [
+        ("Outils & SaaS",  1240, "wrench.and.screwdriver.fill", "7C6FC4"),
+        ("Sous-traitance", 3200, "person.2.fill",               "3A8FC4"),
+        ("Infra",           580, "server.rack",                 "3DAA7D"),
+        ("Marketing",       320, "megaphone.fill",              "F47D31"),
+        ("Divers",          480, "ellipsis.circle.fill",        "D95B7E"),
+    ]
+    private var totalCat: Double { categories.reduce(0) { $0 + $1.1 } }
 
     var body: some View {
         ZStack {
-            // Fond crème Headspace
             Color(hex: preset.softHex).ignoresSafeArea()
-
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 0) {
-                    statsHero
-                    contentArea
-                }
+            VStack(spacing: 0) {
+                statsHero
+                contentArea
             }
-            .ignoresSafeArea(edges: .top)
+            .ignoresSafeArea(edges: .bottom)
         }
         .onAppear {
             viewModel.load()
-            withAnimation(.spring(response: 0.55, dampingFraction: 0.78).delay(0.1)) {
-                appeared = true
-            }
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.78).delay(0.1)) { appeared = true }
         }
     }
 
@@ -41,42 +47,21 @@ struct StatsView: View {
         GeometryReader { geo in
             ZStack(alignment: .bottomLeading) {
                 Color(hex: preset.softHex)
-
-                // Décorations organiques
-                Circle()
-                    .fill(Color(hex: preset.primaryHex).opacity(0.14))
-                    .frame(width: 200, height: 200)
-                    .offset(x: UIScreen.main.bounds.width - 80, y: 0)
-
-                Circle()
-                    .fill(Color.white.opacity(0.35))
-                    .frame(width: 80, height: 80)
+                Circle().fill(Color(hex: preset.primaryHex).opacity(0.14))
+                    .frame(width: 200, height: 200).offset(x: UIScreen.main.bounds.width - 80, y: 0)
+                Circle().fill(Color.white.opacity(0.35)).frame(width: 80, height: 80)
                     .offset(x: UIScreen.main.bounds.width - 40, y: -50)
-
-                // Petit mascot réduit
-                MiniMascot(preset: preset)
-                    .frame(width: 70, height: 70)
+                MiniMascot(preset: preset).frame(width: 70, height: 70)
                     .offset(x: UIScreen.main.bounds.width - 110, y: -10)
 
-                // Texte
                 VStack(alignment: .leading, spacing: 6) {
-                    if let sym = viewModel.habitIconSymbol {
-                        ZStack {
-                            Circle()
-                                .fill(Color(hex: preset.primaryHex).opacity(0.15))
-                                .frame(width: 40, height: 40)
-                            Image(systemName: sym)
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(Color(hex: preset.primaryHex))
-                        }
-                        .padding(.bottom, 4)
-                    }
-
-                    Text(L10n.text("stats.title"))
+                    Text("ANALYTICS")
+                        .font(.system(size: 10, weight: .heavy, design: .rounded))
+                        .foregroundStyle(Color(hex: preset.primaryHex)).kerning(1.8)
+                    Text("Statistiques")
                         .font(.system(size: 30, weight: .black, design: .rounded))
                         .foregroundStyle(Color(hex: preset.darkHex))
-
-                    Text(L10n.text("stats.hero.subtitle"))
+                    Text("6 derniers mois")
                         .font(.system(size: 14, weight: .medium, design: .rounded))
                         .foregroundStyle(Color(hex: preset.darkHex).opacity(0.5))
                         .padding(.bottom, 28)
@@ -88,229 +73,143 @@ struct StatsView: View {
         .frame(height: 200)
     }
 
-    // MARK: — Contenu sur fond blanc
+    // MARK: — Contenu
 
     private var contentArea: some View {
         ZStack(alignment: .top) {
             RoundedRectangle(cornerRadius: 36, style: .continuous)
-                .fill(Theme.card(cs))
-                .ignoresSafeArea(edges: .bottom)
+                .fill(Theme.card(cs)).ignoresSafeArea(edges: .bottom)
                 .shadow(color: .black.opacity(0.06), radius: 16, x: 0, y: -3)
 
-            VStack(spacing: 14) {
-                // Handle
-                RoundedRectangle(cornerRadius: 2.5, style: .continuous)
-                    .fill(Theme.fg2(cs).opacity(0.18))
-                    .frame(width: 36, height: 5)
-                    .padding(.top, 12)
-
-                streakRow
-                ratesRow
-                calendarCard
-                    .padding(.bottom, 34)
-            }
-            .padding(.horizontal, Theme.pad)
-        }
-        .offset(y: appeared ? 0 : 50)
-        .opacity(appeared ? 1 : 0)
-    }
-
-    // MARK: — Streak row
-
-    private var streakRow: some View {
-        HStack(spacing: 12) {
-            streakTile(
-                label: L10n.text("stats.current"),
-                value: viewModel.currentStreak,
-                icon: "flame.fill",
-                primary: true
-            )
-            streakTile(
-                label: L10n.text("stats.best"),
-                value: viewModel.bestStreak,
-                icon: "trophy.fill",
-                primary: false
-            )
-        }
-    }
-
-    private func streakTile(label: String, value: Int, icon: String, primary: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(label.uppercased())
-                    .font(.system(size: 9, weight: .heavy, design: .rounded))
-                    .foregroundStyle(primary
-                                     ? Color(hex: preset.primaryHex)
-                                     : Theme.fg2(cs))
-                    .kerning(1.2)
-                Spacer()
-                Image(systemName: icon)
-                    .font(.system(size: 11))
-                    .foregroundStyle(primary
-                                     ? Color(hex: preset.primaryHex)
-                                     : Theme.fg2(cs).opacity(0.4))
-            }
-
-            Text("\(value)")
-                .font(.system(size: 56, weight: .black, design: .rounded))
-                .foregroundStyle(Theme.fg(cs))
-                .contentTransition(.numericText())
-                .animation(.spring(response: 0.5, dampingFraction: 0.7), value: value)
-
-            Text(L10n.streakUnit(value))
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundStyle(Theme.fg2(cs))
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.rL, style: .continuous)
-                .fill(primary
-                      ? Color(hex: preset.primaryHex).opacity(0.08)
-                      : Theme.surface(cs))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.rL, style: .continuous)
-                .stroke(primary
-                        ? Color(hex: preset.primaryHex).opacity(0.15)
-                        : Color.clear,
-                        lineWidth: 1.5)
-        )
-    }
-
-    // MARK: — Rates row
-
-    private var ratesRow: some View {
-        HStack(spacing: 12) {
-            rateTile(label: L10n.text("stats.last7"),  value: viewModel.completionRate7)
-            rateTile(label: L10n.text("stats.last30"), value: viewModel.completionRate30)
-        }
-    }
-
-    private func rateTile(label: String, value: Double) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(label.uppercased())
-                .font(.system(size: 9, weight: .heavy, design: .rounded))
-                .foregroundStyle(Theme.fg2(cs))
-                .kerning(1.2)
-
-            HStack(spacing: 14) {
-                // Arc circulaire
-                ZStack {
-                    Circle()
-                        .stroke(Theme.surface(cs), style: StrokeStyle(lineWidth: 7, lineCap: .round))
-                    Circle()
-                        .trim(from: 0, to: CGFloat(value))
-                        .stroke(Color(hex: preset.primaryHex),
-                                style: StrokeStyle(lineWidth: 7, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                        .animation(.spring(response: 0.7, dampingFraction: 0.75), value: value)
-                    Text(L10n.completionPercent(value))
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .foregroundStyle(Theme.fg(cs))
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 14) {
+                    RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+                        .fill(Theme.fg2(cs).opacity(0.18)).frame(width: 36, height: 5).padding(.top, 12)
+                    kpiRow
+                    barChartCard
+                    categoriesCard
                 }
-                .frame(width: 54, height: 54)
-
-                Text(value >= 0.8 ? "🌟" : value >= 0.5 ? "👍" : "💪")
-                    .font(.system(size: 26))
+                .padding(.horizontal, Theme.pad)
+                .padding(.bottom, 100)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.rL, style: .continuous)
-                .fill(Theme.surface(cs))
-        )
+        .frame(maxHeight: .infinity)
+        .offset(y: appeared ? 0 : 50).opacity(appeared ? 1 : 0)
+        .animation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.15), value: appeared)
     }
 
-    // MARK: — Calendar card
+    // MARK: — KPI row
 
-    private var calendarCard: some View {
+    private var kpiRow: some View {
+        HStack(spacing: 12) {
+            kpiTile(label: "CA total",    value: "21 400 €", icon: "eurosign.circle.fill", colorHex: "3DAA7D", primary: true)
+            kpiTile(label: "Dépenses",    value: "5 820 €",  icon: "arrow.up.circle.fill",  colorHex: "E0654A", primary: false)
+        }
+    }
+
+    private func kpiTile(label: String, value: String, icon: String, colorHex: String, primary: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(label.uppercased()).font(.system(size: 9, weight: .heavy, design: .rounded))
+                    .foregroundStyle(primary ? Color(hex: colorHex) : Theme.fg2(cs)).kerning(1.2)
+                Spacer()
+                Image(systemName: icon).font(.system(size: 11))
+                    .foregroundStyle(Color(hex: colorHex).opacity(primary ? 1 : 0.5))
+            }
+            Text(value).font(.system(size: 32, weight: .black, design: .rounded)).foregroundStyle(Theme.fg(cs))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading).padding(18)
+        .background(RoundedRectangle(cornerRadius: Theme.rL, style: .continuous)
+            .fill(primary ? Color(hex: colorHex).opacity(0.08) : Theme.surface(cs))
+            .overlay(RoundedRectangle(cornerRadius: Theme.rL, style: .continuous)
+                .stroke(primary ? Color(hex: colorHex).opacity(0.15) : Color.clear, lineWidth: 1.5)))
+    }
+
+    // MARK: — Bar chart
+
+    private var barChartCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text(viewModel.monthTitle)
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
-                    .foregroundStyle(Theme.fg(cs))
-                Spacer()
-                HStack(spacing: 5) {
-                    RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .fill(Color(hex: preset.primaryHex))
-                        .frame(width: 10, height: 10)
-                    Text(L10n.text("stats.legend.done"))
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
-                        .foregroundStyle(Theme.fg2(cs))
+            Text("REVENUS VS DÉPENSES")
+                .font(.system(size: 10, weight: .heavy, design: .rounded))
+                .foregroundStyle(Theme.fg2(cs)).kerning(1.4)
+
+            let maxVal = monthlyData.map { max($0.1, $0.2) }.max() ?? 1
+            HStack(alignment: .bottom, spacing: 8) {
+                ForEach(monthlyData, id: \.0) { item in
+                    VStack(spacing: 4) {
+                        HStack(alignment: .bottom, spacing: 3) {
+                            // Revenus
+                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .fill(Color(hex: "3DAA7D"))
+                                .frame(width: 14, height: max(6, CGFloat(item.1 / maxVal) * 80))
+                            // Dépenses
+                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .fill(Color(hex: "E0654A").opacity(0.75))
+                                .frame(width: 14, height: max(6, CGFloat(item.2 / maxVal) * 80))
+                        }
+                        Text(item.0).font(.system(size: 9, weight: .medium, design: .rounded)).foregroundStyle(Theme.fg2(cs))
+                    }
+                    .frame(maxWidth: .infinity)
                 }
             }
-            CalendarGrid(days: viewModel.monthDays, preset: preset, cs: cs)
+            .frame(height: 110)
+
+            // Légende
+            HStack(spacing: 16) {
+                legendDot(color: Color(hex: "3DAA7D"), label: "Revenus")
+                legendDot(color: Color(hex: "E0654A").opacity(0.75), label: "Dépenses")
+            }
         }
         .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.rL, style: .continuous)
-                .fill(Theme.surface(cs))
-        )
+        .background(RoundedRectangle(cornerRadius: Theme.rL, style: .continuous).fill(Theme.surface(cs)))
     }
-}
 
-// MARK: - Calendar grid
+    private func legendDot(color: Color, label: String) -> some View {
+        HStack(spacing: 6) {
+            Circle().fill(color).frame(width: 8, height: 8)
+            Text(label).font(.system(size: 11, weight: .medium, design: .rounded)).foregroundStyle(Theme.fg2(cs))
+        }
+    }
 
-private struct CalendarGrid: View {
-    let days: [MonthGridDay]
-    let preset: ThemePreset
-    let cs: ColorScheme
+    // MARK: — Catégories
 
-    private let letters = ["L","M","M","J","V","S","D"]
-    private let cols = Array(repeating: GridItem(.flexible(), spacing: 5), count: 7)
+    private var categoriesCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("PAR CATÉGORIE")
+                .font(.system(size: 10, weight: .heavy, design: .rounded))
+                .foregroundStyle(Theme.fg2(cs)).kerning(1.4)
 
-    var body: some View {
-        VStack(spacing: 6) {
-            HStack(spacing: 0) {
-                ForEach(letters, id: \.self) { l in
-                    Text(l)
-                        .font(.system(size: 10, weight: .heavy, design: .rounded))
-                        .foregroundStyle(Theme.fg2(cs).opacity(0.4))
-                        .frame(maxWidth: .infinity)
+            ForEach(categories, id: \.0) { cat in
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .fill(Color(hex: cat.3).opacity(0.15)).frame(width: 34, height: 34)
+                        Image(systemName: cat.2).font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color(hex: cat.3))
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(cat.0).font(.system(size: 13, weight: .semibold, design: .rounded)).foregroundStyle(Theme.fg(cs))
+                            Spacer()
+                            Text(cat.1.formatted(.currency(code: "EUR").precision(.fractionLength(0))))
+                                .font(.system(size: 13, weight: .bold, design: .rounded)).foregroundStyle(Theme.fg(cs))
+                        }
+                        GeometryReader { g in
+                            ZStack(alignment: .leading) {
+                                Capsule().fill(Theme.card(cs)).frame(height: 5)
+                                Capsule().fill(Color(hex: cat.3)).frame(width: g.size.width * CGFloat(cat.1 / totalCat), height: 5)
+                            }
+                        }.frame(height: 5)
+                    }
                 }
             }
-            LazyVGrid(columns: cols, spacing: 5) {
-                ForEach(days) { day in cellView(day) }
-            }
         }
-    }
-
-    @ViewBuilder
-    private func cellView(_ day: MonthGridDay) -> some View {
-        let isCompleted = day.isCompleted
-        let inMonth = day.isCurrentMonth
-
-        ZStack {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(
-                    isCompleted
-                        ? Color(hex: preset.primaryHex)
-                        : (inMonth ? Theme.card(cs) : Color.clear)
-                )
-
-            if isCompleted {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 9, weight: .black))
-                    .foregroundStyle(Color.white)
-            } else {
-                Text("\(day.dayNumber)")
-                    .font(.system(size: 12, weight: inMonth ? .medium : .regular, design: .rounded))
-                    .foregroundStyle(
-                        inMonth ? Theme.fg(cs) : Theme.fg2(cs).opacity(0.2)
-                    )
-            }
-        }
-        .frame(height: 32)
-        .shadow(
-            color: isCompleted ? Color(hex: preset.primaryHex).opacity(0.28) : .clear,
-            radius: 4, x: 0, y: 2
-        )
+        .padding(18)
+        .background(RoundedRectangle(cornerRadius: Theme.rL, style: .continuous).fill(Theme.surface(cs)))
     }
 }
 
-// MARK: - Mini mascot pour la hero stats
+// MARK: - Mini Mascot
 
 private struct MiniMascot: View {
     let preset: ThemePreset
@@ -318,26 +217,17 @@ private struct MiniMascot: View {
 
     var body: some View {
         ZStack {
-            Circle()
-                .fill(Color(hex: preset.primaryHex))
+            Circle().fill(Color(hex: preset.primaryHex))
                 .shadow(color: Color(hex: preset.primaryHex).opacity(0.25), radius: 8, x: 0, y: 4)
-
             HStack(spacing: 10) {
                 Circle().fill(Color.white).frame(width: 6, height: 6)
                 Circle().fill(Color.white).frame(width: 6, height: 6)
-            }
-            .offset(y: -4)
-
-            Capsule()
-                .fill(Color.white.opacity(0.85))
-                .frame(width: 18, height: 4)
-                .offset(y: 8)
+            }.offset(y: -4)
+            Capsule().fill(Color.white.opacity(0.85)).frame(width: 18, height: 4).offset(y: 8)
         }
         .scaleEffect(scale)
         .onAppear {
-            withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
-                scale = 1.06
-            }
+            withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) { scale = 1.06 }
         }
     }
 }

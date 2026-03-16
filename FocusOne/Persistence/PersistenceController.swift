@@ -3,16 +3,21 @@ import CoreData
 final class PersistenceController {
     static let shared = PersistenceController()
 
-    let container: NSPersistentCloudKitContainer
+    let container: NSPersistentContainer
 
     init(inMemory: Bool = false) {
+        #if DEBUG
+        container = NSPersistentContainer(name: "Model")
+        #else
         container = NSPersistentCloudKitContainer(name: "Model")
+        #endif
         let isPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
 
         if let description = container.persistentStoreDescriptions.first {
             if inMemory {
                 description.url = URL(fileURLWithPath: "/dev/null")
             }
+            #if !DEBUG
             description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
             description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
             if !inMemory && !isPreview {
@@ -20,6 +25,7 @@ final class PersistenceController {
                     containerIdentifier: AppConfig.cloudKitContainerIdentifier
                 )
             }
+            #endif
         }
 
         container.loadPersistentStores { _, error in

@@ -8,6 +8,7 @@ final class HomeViewModel: ObservableObject {
     @Published var currentStreak = 0
     @Published var bestStreak = 0
     @Published var nextReminderText = ""
+    @Published var completionRate7: Double = 0
 
     private let context: NSManagedObjectContext
     private let streakEngine: StreakEngine
@@ -33,6 +34,7 @@ final class HomeViewModel: ObservableObject {
         doneToday = streakEngine.doneToday(habit: habit, completions: completions)
         currentStreak = streakEngine.currentStreak(habit: habit, completions: completions)
         bestStreak = streakEngine.bestStreak(habit: habit, completions: completions)
+        completionRate7 = streakEngine.completionRate(habit: habit, completions: completions, days: 7)
         nextReminderText = nextReminderDescription(from: habit)
         self.habit = habit
 

@@ -1,520 +1,325 @@
 import SwiftUI
 import CoreData
 
-// MARK: - HomeView
+// MARK: - HomeView — Dashboard Budget
 
 struct HomeView: View {
-    @StateObject private var viewModel: HomeViewModel
     @Environment(\.colorScheme) private var cs
-    @State private var showEdit = false
     @State private var appeared = false
-    private let ctx: NSManagedObjectContext
+    private let context: NSManagedObjectContext
 
-    init(context: NSManagedObjectContext) {
-        ctx = context
-        _viewModel = StateObject(wrappedValue: HomeViewModel(context: context))
-    }
+    private let totalBudget: Double = 12_400
+    private let totalSpent: Double  = 7_820
+    private let totalIncome: Double = 9_200
+    private let recentTx: [MockTx] = MockTx.samples
 
-    private var preset: ThemePreset {
-        Theme.preset(for: viewModel.habit?.colorHex ?? Theme.defaultThemeHex)
-    }
+    private var remaining: Double  { totalBudget - totalSpent }
+    private var spentRatio: Double { min(totalSpent / totalBudget, 1.0) }
+    private var preset: ThemePreset { Theme.preset(for: Theme.defaultThemeHex) }
+
+    init(context: NSManagedObjectContext) { self.context = context }
 
     var body: some View {
         ZStack {
-            // Fond crème plein écran — signature Headspace
             Color(hex: preset.softHex).ignoresSafeArea()
-
-            if let habit = viewModel.habit {
-                habitContent(habit: habit)
-            } else {
-                emptyState
+            VStack(spacing: 0) {
+                topArea
+                bottomSheet
             }
+            .ignoresSafeArea(edges: .bottom)
         }
         .onAppear {
-            viewModel.load()
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.15)) {
-                appeared = true
-            }
-        }
-        .sheet(isPresented: $showEdit, onDismiss: viewModel.load) {
-            OnboardingView(
-                context: ctx, mode: .edit,
-                onFinished: { showEdit = false; viewModel.load() },
-                onCancel:   { showEdit = false }
-            )
-            .presentationDetents([.large])
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.78).delay(0.1)) { appeared = true }
         }
     }
 
-    // MARK: — Layout principal
+    // MARK: — Top hero
 
-    private func habitContent(habit: Habit) -> some View {
-        VStack(spacing: 0) {
-            // Zone supérieure : mascotte + streak (plein fond coloré)
-            topArea(habit: habit)
-
-            // Zone inférieure : cartes sur fond blanc/crème
-            bottomSheet(habit: habit)
-        }
-        .ignoresSafeArea(edges: .bottom)
-    }
-
-    // MARK: — Top area (75% écran)
-
-    private func topArea(habit: Habit) -> some View {
+    private var topArea: some View {
         GeometryReader { geo in
             ZStack(alignment: .top) {
-                // Fond couleur thème
                 Color(hex: preset.softHex)
-
-                // Décor : grands cercles flottants
                 decorCircles
-
                 VStack(spacing: 0) {
-                    // ── Barre du haut
-                    topBar(habit: habit)
-                        .padding(.top, geo.safeAreaInsets.top + 8)
-                        .padding(.horizontal, Theme.pad)
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("BUDGET")
+                                .font(.system(size: 10, weight: .heavy, design: .rounded))
+                                .foregroundStyle(Color(hex: preset.primaryHex)).kerning(1.8)
+                            Text("Vue d'ensemble")
+                                .font(.system(size: 19, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color(hex: preset.darkHex))
+                        }
+                        Spacer()
+                        Button {} label: {
+                            Circle().fill(Color.white.opacity(0.55)).frame(width: 40, height: 40)
+                                .overlay(Image(systemName: "bell.fill")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundStyle(Color(hex: preset.darkHex)))
+                        }.buttonStyle(.plain)
+                    }
+                    .padding(.top, geo.safeAreaInsets.top + 8)
+                    .padding(.horizontal, Theme.pad)
 
                     Spacer()
 
-                    // ── Mascotte centrée
-                    HeadspaceMascot(preset: preset, doneToday: viewModel.doneToday)
-                        .frame(height: 190)
-                        .scaleEffect(appeared ? 1 : 0.75)
-                        .opacity(appeared ? 1 : 0)
+                    BudgetMascot(preset: preset, isHealthy: spentRatio < 0.75)
+                        .frame(height: 155)
+                        .scaleEffect(appeared ? 1 : 0.75).opacity(appeared ? 1 : 0)
                         .animation(.spring(response: 0.55, dampingFraction: 0.68).delay(0.05), value: appeared)
 
                     Spacer()
 
-                    // ── Streak au centre
-                    streakDisplay
-                        .padding(.bottom, 36)
-                        .offset(y: appeared ? 0 : 24)
-                        .opacity(appeared ? 1 : 0)
-                        .animation(.spring(response: 0.5, dampingFraction: 0.75).delay(0.1), value: appeared)
+                    VStack(spacing: 6) {
+                        Text("RESTE DISPONIBLE")
+                            .font(.system(size: 10, weight: .heavy, design: .rounded))
+                            .foregroundStyle(Color(hex: preset.darkHex).opacity(0.45)).kerning(2.0)
+                        Text(remaining.formatted(.currency(code: "EUR").precision(.fractionLength(0))))
+                            .font(.system(size: 68, weight: .black, design: .rounded))
+                            .foregroundStyle(remaining > 0 ? Color(hex: preset.darkHex) : Color(hex: "E0654A"))
+                            .contentTransition(.numericText())
+                    }
+                    .padding(.bottom, 32)
+                    .offset(y: appeared ? 0 : 24).opacity(appeared ? 1 : 0)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.75).delay(0.1), value: appeared)
                 }
             }
         }
-        .frame(height: UIScreen.main.bounds.height * 0.60)
+        .frame(height: UIScreen.main.bounds.height * 0.54)
     }
-
-    // MARK: — Décors flottants
 
     private var decorCircles: some View {
         ZStack {
-            Circle()
-                .fill(Color(hex: preset.primaryHex).opacity(0.12))
-                .frame(width: 280, height: 280)
+            Circle().fill(Color(hex: preset.primaryHex).opacity(0.12)).frame(width: 260, height: 260)
                 .offset(x: -UIScreen.main.bounds.width * 0.35, y: -60)
-
-            Circle()
-                .fill(Color(hex: preset.primaryHex).opacity(0.08))
-                .frame(width: 160, height: 160)
-                .offset(x: UIScreen.main.bounds.width * 0.38, y: 80)
-
-            Circle()
-                .fill(Color.white.opacity(0.18))
-                .frame(width: 60, height: 60)
-                .offset(x: UIScreen.main.bounds.width * 0.30, y: -80)
+            Circle().fill(Color(hex: preset.primaryHex).opacity(0.07)).frame(width: 150, height: 150)
+                .offset(x: UIScreen.main.bounds.width * 0.38, y: 70)
         }
     }
 
-    // MARK: — Top bar
+    // MARK: — Bottom sheet
 
-    private func topBar(habit: Habit) -> some View {
-        HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(greetingText.uppercased())
-                    .font(.system(size: 10, weight: .heavy, design: .rounded))
-                    .foregroundStyle(Color(hex: preset.primaryHex))
-                    .kerning(1.8)
-                Text(habit.name)
-                    .font(.system(size: 19, weight: .bold, design: .rounded))
-                    .foregroundStyle(Color(hex: preset.darkHex))
-                    .lineLimit(1)
-            }
-
-            Spacer()
-
-            Button { showEdit = true } label: {
-                Circle()
-                    .fill(Color.white.opacity(0.55))
-                    .frame(width: 40, height: 40)
-                    .overlay(
-                        Image(systemName: "slider.horizontal.3")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(Color(hex: preset.darkHex))
-                    )
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    // MARK: — Streak display
-
-    private var streakDisplay: some View {
-        VStack(spacing: 8) {
-            HStack(alignment: .lastTextBaseline, spacing: 8) {
-                Text("\(viewModel.currentStreak)")
-                    .font(.system(size: 88, weight: .black, design: .rounded))
-                    .foregroundStyle(Color(hex: preset.darkHex))
-                    .contentTransition(.numericText())
-                    .animation(.spring(response: 0.5, dampingFraction: 0.68), value: viewModel.currentStreak)
-
-                Text(L10n.streakUnit(viewModel.currentStreak).uppercased())
-                    .font(.system(size: 14, weight: .heavy, design: .rounded))
-                    .foregroundStyle(Color(hex: preset.primaryHex))
-                    .kerning(1.0)
-                    .padding(.bottom, 16)
-            }
-
-            Text(L10n.text("home.streak.label").uppercased())
-                .font(.system(size: 11, weight: .heavy, design: .rounded))
-                .foregroundStyle(Color(hex: preset.darkHex).opacity(0.45))
-                .kerning(2.2)
-        }
-    }
-
-    // MARK: — Bottom sheet (fond blanc arrondi)
-
-    private func bottomSheet(habit: Habit) -> some View {
+    private var bottomSheet: some View {
         ZStack(alignment: .top) {
-            // Fond blanc avec coins arrondis en haut
             RoundedRectangle(cornerRadius: 36, style: .continuous)
-                .fill(Theme.card(cs))
-                .ignoresSafeArea(edges: .bottom)
+                .fill(Theme.card(cs)).ignoresSafeArea(edges: .bottom)
                 .shadow(color: .black.opacity(0.07), radius: 20, x: 0, y: -4)
 
             VStack(spacing: 14) {
-                // Handle pill
                 RoundedRectangle(cornerRadius: 2.5, style: .continuous)
-                    .fill(Theme.fg2(cs).opacity(0.18))
-                    .frame(width: 36, height: 5)
-                    .padding(.top, 12)
-
-                // Today status pill
-                todayPill
-
-                // Stats mini
-                statsRow
-
-                // Reminder
-                if !viewModel.nextReminderText.isEmpty {
-                    reminderRow
-                }
-
+                    .fill(Theme.fg2(cs).opacity(0.18)).frame(width: 36, height: 5).padding(.top, 12)
+                budgetProgressCard
+                incomeExpenseRow
+                recentTransactions
                 Spacer(minLength: 0)
-
-                // CTA
-                DoneToggleButton(isDone: viewModel.doneToday, tintHex: preset.primaryHex) {
-                    viewModel.toggleDoneToday()
-                }
-                .padding(.bottom, 34)
             }
             .padding(.horizontal, Theme.pad)
         }
         .frame(maxHeight: .infinity)
-        .offset(y: appeared ? 0 : 60)
-        .opacity(appeared ? 1 : 0)
+        .offset(y: appeared ? 0 : 60).opacity(appeared ? 1 : 0)
         .animation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.2), value: appeared)
     }
 
-    // MARK: — Today pill
+    // MARK: — Budget progress
 
-    private var todayPill: some View {
-        HStack(spacing: 10) {
-            ZStack {
-                Circle()
-                    .fill(viewModel.doneToday
-                          ? Color(hex: preset.primaryHex).opacity(0.15)
-                          : Theme.surface(cs))
-                    .frame(width: 36, height: 36)
-                Image(systemName: viewModel.doneToday ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(viewModel.doneToday
-                                     ? Color(hex: preset.primaryHex)
-                                     : Theme.fg2(cs))
+    private var budgetProgressCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Budget total")
+                    .font(.system(size: 13, weight: .semibold, design: .rounded)).foregroundStyle(Theme.fg2(cs))
+                Spacer()
+                Text(totalBudget.formatted(.currency(code: "EUR").precision(.fractionLength(0))))
+                    .font(.system(size: 13, weight: .bold, design: .rounded)).foregroundStyle(Theme.fg(cs))
             }
+            GeometryReader { g in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Theme.surface(cs)).frame(height: 10)
+                    Capsule()
+                        .fill(LinearGradient(
+                            colors: spentRatio > 0.85
+                                ? [Color(hex: "E0654A"), Color(hex: "F5A623")]
+                                : [Color(hex: preset.primaryHex), Color(hex: preset.primaryHex).opacity(0.7)],
+                            startPoint: .leading, endPoint: .trailing))
+                        .frame(width: g.size.width * CGFloat(spentRatio), height: 10)
+                        .animation(.spring(response: 0.7, dampingFraction: 0.75), value: spentRatio)
+                }
+            }.frame(height: 10)
 
-            VStack(alignment: .leading, spacing: 1) {
-                Text(viewModel.doneToday
-                     ? L10n.text("home.today.state.done")
-                     : L10n.text("home.today.state.not_done"))
-                    .font(.system(size: 15, weight: .semibold, design: .rounded))
-                    .foregroundStyle(Theme.fg(cs))
-                Text(todayDateString)
-                    .font(.system(size: 12, weight: .regular, design: .rounded))
-                    .foregroundStyle(Theme.fg2(cs))
-            }
-
-            Spacer()
-
-            if viewModel.doneToday {
-                Text("✦")
-                    .font(.system(size: 20))
-                    .foregroundStyle(Color(hex: preset.primaryHex))
-                    .transition(.scale(scale: 0.4).combined(with: .opacity))
+            HStack {
+                Text("Dépensé : \(totalSpent.formatted(.currency(code: "EUR").precision(.fractionLength(0))))")
+                    .font(.system(size: 11, weight: .medium, design: .rounded)).foregroundStyle(Theme.fg2(cs))
+                Spacer()
+                Text("\(Int(spentRatio * 100))%")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(spentRatio > 0.85 ? Color(hex: "E0654A") : Color(hex: preset.primaryHex))
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.rM, style: .continuous)
-                .fill(Theme.surface(cs))
-        )
-        .animation(.spring(response: 0.35, dampingFraction: 0.75), value: viewModel.doneToday)
+        .padding(.horizontal, 16).padding(.vertical, 14)
+        .background(RoundedRectangle(cornerRadius: Theme.rM, style: .continuous).fill(Theme.surface(cs)))
     }
 
-    // MARK: — Stats row
+    // MARK: — Revenus / Dépenses
 
-    private var statsRow: some View {
+    private var incomeExpenseRow: some View {
         HStack(spacing: 12) {
-            statPill(
-                icon: "trophy.fill",
-                value: "\(viewModel.bestStreak)",
-                label: L10n.text("home.best.short")
-            )
-            statPill(
-                icon: "chart.bar.fill",
-                value: L10n.completionPercent(viewModel.completionRate7),
-                label: L10n.text("stats.last7")
-            )
+            financeTile(label: "Revenus",  amount: totalIncome, icon: "arrow.down.circle.fill", color: Color(hex: "3DAA7D"))
+            financeTile(label: "Dépenses", amount: totalSpent,  icon: "arrow.up.circle.fill",   color: Color(hex: "E0654A"))
         }
     }
 
-    private func statPill(icon: String, value: String, label: String) -> some View {
+    private func financeTile(label: String, amount: Double, icon: String, color: Color) -> some View {
         HStack(spacing: 10) {
             ZStack {
-                Circle()
-                    .fill(Color(hex: preset.primaryHex).opacity(0.10))
-                    .frame(width: 36, height: 36)
-                Image(systemName: icon)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color(hex: preset.primaryHex))
+                Circle().fill(color.opacity(0.12)).frame(width: 36, height: 36)
+                Image(systemName: icon).font(.system(size: 16, weight: .semibold)).foregroundStyle(color)
             }
             VStack(alignment: .leading, spacing: 1) {
-                Text(value)
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
-                    .foregroundStyle(Theme.fg(cs))
-                Text(label)
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundStyle(Theme.fg2(cs))
+                Text(amount.formatted(.currency(code: "EUR").precision(.fractionLength(0))))
+                    .font(.system(size: 15, weight: .bold, design: .rounded)).foregroundStyle(Theme.fg(cs))
+                Text(label).font(.system(size: 11, weight: .medium, design: .rounded)).foregroundStyle(Theme.fg2(cs))
             }
             Spacer()
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.rM, style: .continuous)
-                .fill(Theme.surface(cs))
-        )
+        .padding(.horizontal, 14).padding(.vertical, 12).frame(maxWidth: .infinity)
+        .background(RoundedRectangle(cornerRadius: Theme.rM, style: .continuous).fill(Theme.surface(cs)))
     }
 
-    // MARK: — Reminder row
+    // MARK: — Transactions récentes
 
-    private var reminderRow: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "bell.fill")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color(hex: preset.primaryHex))
-            Text(viewModel.nextReminderText)
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundStyle(Theme.fg2(cs))
-            Spacer()
+    private var recentTransactions: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("RÉCENT")
+                    .font(.system(size: 10, weight: .heavy, design: .rounded))
+                    .foregroundStyle(Theme.fg2(cs)).kerning(1.4)
+                Spacer()
+                Button("Tout voir") {}
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color(hex: preset.primaryHex)).buttonStyle(.plain)
+            }
+            ForEach(recentTx.prefix(3)) { tx in txRow(tx) }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.rM, style: .continuous)
-                .fill(Color(hex: preset.primaryHex).opacity(0.06))
-        )
+        .padding(.horizontal, 16).padding(.vertical, 14)
+        .background(RoundedRectangle(cornerRadius: Theme.rM, style: .continuous).fill(Theme.surface(cs)))
+        .padding(.bottom, 100)
     }
 
-    // MARK: — Empty state
-
-    private var emptyState: some View {
-        VStack(spacing: 24) {
+    private func txRow(_ tx: MockTx) -> some View {
+        HStack(spacing: 12) {
             ZStack {
-                Circle()
-                    .fill(Color.white.opacity(0.5))
-                    .frame(width: 100, height: 100)
-                Image(systemName: "sparkles")
-                    .font(.system(size: 38, weight: .light))
-                    .foregroundStyle(Color(hex: Theme.defaultThemeHex))
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color(hex: tx.colorHex).opacity(0.15)).frame(width: 36, height: 36)
+                Image(systemName: tx.icon).font(.system(size: 14, weight: .semibold)).foregroundStyle(Color(hex: tx.colorHex))
             }
-            Text(L10n.text("home.no_habit"))
-                .font(.system(size: 17, weight: .medium, design: .rounded))
-                .foregroundStyle(Color(hex: "7A6E62"))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(tx.label).font(.system(size: 14, weight: .semibold, design: .rounded)).foregroundStyle(Theme.fg(cs))
+                Text(tx.project).font(.system(size: 11, weight: .regular, design: .rounded)).foregroundStyle(Theme.fg2(cs))
+            }
+            Spacer()
+            Text((tx.isExpense ? "-" : "+") + tx.amount.formatted(.currency(code: "EUR").precision(.fractionLength(0))))
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .foregroundStyle(tx.isExpense ? Color(hex: "E0654A") : Color(hex: "3DAA7D"))
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    // MARK: — Helpers
-
-    private var greetingText: String {
-        let h = Calendar.current.component(.hour, from: Date())
-        switch h {
-        case 5..<12: return L10n.text("home.greeting.morning")
-        case 12..<18: return L10n.text("home.greeting.afternoon")
-        default:      return L10n.text("home.greeting.evening")
-        }
-    }
-
-    private var todayDateString: String {
-        let f = DateFormatter()
-        f.locale = .current
-        f.setLocalizedDateFormatFromTemplate("EEEEdMMMM")
-        return f.string(from: Date())
     }
 }
 
-// MARK: - Headspace Mascot
+// MARK: - Budget Mascot
 
-private struct HeadspaceMascot: View {
+private struct BudgetMascot: View {
     let preset: ThemePreset
-    let doneToday: Bool
-
-    @State private var breatheScale: CGFloat = 1.0
-    @State private var floatOffset: CGFloat = 0
+    let isHealthy: Bool
+    @State private var breatheScale: CGFloat = 1
+    @State private var floatOffset: CGFloat  = 0
 
     var body: some View {
         ZStack {
-            // Ombre douce sous le corps
-            Ellipse()
-                .fill(Color(hex: preset.primaryHex).opacity(0.18))
-                .frame(width: 120, height: 24)
-                .blur(radius: 12)
-                .offset(y: 82 + floatOffset * 0.3)
+            Ellipse().fill(Color(hex: preset.primaryHex).opacity(0.15))
+                .frame(width: 100, height: 18).blur(radius: 10).offset(y: 65 + floatOffset * 0.3)
 
-            // Corps principal — cercle signature Headspace
             ZStack {
-                // Corps
-                Circle()
-                    .fill(Color(hex: preset.primaryHex))
-                    .frame(width: 140, height: 140)
-                    .shadow(color: Color(hex: preset.primaryHex).opacity(0.30),
-                            radius: 24, x: 0, y: 12)
+                Circle().fill(Color(hex: preset.primaryHex)).frame(width: 118, height: 118)
+                    .shadow(color: Color(hex: preset.primaryHex).opacity(0.28), radius: 20, x: 0, y: 10)
 
-                // Visage
                 VStack(spacing: 0) {
-                    if doneToday {
-                        // Yeux fermés heureux (demi-cercles)
-                        HStack(spacing: 26) {
-                            HappyEye()
-                            HappyEye()
-                        }
-                        .frame(height: 16)
-                        .offset(y: -6)
-
-                        // Sourire
-                        SmilePath()
-                            .stroke(Color.white,
-                                    style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                            .frame(width: 46, height: 18)
-                            .offset(y: 10)
+                    if isHealthy {
+                        HStack(spacing: 22) { HappyEye(); HappyEye() }.frame(height: 13).offset(y: -4)
+                        SmilePath().stroke(Color.white, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
+                            .frame(width: 36, height: 14).offset(y: 8)
                     } else {
-                        // Yeux ouverts neutres
-                        HStack(spacing: 26) {
-                            Circle().fill(Color.white).frame(width: 13, height: 13)
-                            Circle().fill(Color.white).frame(width: 13, height: 13)
-                        }
-                        .offset(y: -6)
-
-                        // Bouche neutre
-                        Capsule()
-                            .fill(Color.white.opacity(0.85))
-                            .frame(width: 32, height: 5)
-                            .offset(y: 12)
+                        HStack(spacing: 22) {
+                            Circle().fill(Color.white).frame(width: 10, height: 10)
+                            Circle().fill(Color.white).frame(width: 10, height: 10)
+                        }.offset(y: -4)
+                        WorriedMouth().stroke(Color.white, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
+                            .frame(width: 26, height: 10).offset(y: 12)
                     }
                 }
+                ZStack {
+                    Circle().fill(Color.white.opacity(0.25)).frame(width: 24, height: 24)
+                    Text("€").font(.system(size: 11, weight: .black, design: .rounded)).foregroundStyle(Color.white)
+                }.offset(x: 44, y: -34)
             }
-            .scaleEffect(breatheScale)
-            .offset(y: floatOffset)
+            .scaleEffect(breatheScale).offset(y: floatOffset)
 
-            // Petits cercles orbitaux
-            Circle()
-                .fill(Color.white.opacity(0.45))
-                .frame(width: 22, height: 22)
-                .offset(x: -88, y: -28)
-
-            Circle()
-                .fill(Color(hex: preset.primaryHex).opacity(0.30))
-                .frame(width: 14, height: 14)
-                .offset(x: 90, y: -50)
-
-            Circle()
-                .fill(Color.white.opacity(0.25))
-                .frame(width: 10, height: 10)
-                .offset(x: 80, y: 40)
+            Circle().fill(Color.white.opacity(0.4)).frame(width: 16, height: 16).offset(x: -72, y: -20)
+            Circle().fill(Color(hex: preset.primaryHex).opacity(0.25)).frame(width: 11, height: 11).offset(x: 74, y: -40)
         }
         .onAppear {
-            // Animation respiration lente
-            withAnimation(
-                .easeInOut(duration: 3.5)
-                    .repeatForever(autoreverses: true)
-            ) {
-                breatheScale = 1.06
-            }
-            // Lévitation douce
-            withAnimation(
-                .easeInOut(duration: 2.8)
-                    .repeatForever(autoreverses: true)
-                    .delay(0.4)
-            ) {
-                floatOffset = -10
-            }
+            withAnimation(.easeInOut(duration: 3.5).repeatForever(autoreverses: true)) { breatheScale = 1.05 }
+            withAnimation(.easeInOut(duration: 2.8).repeatForever(autoreverses: true).delay(0.4)) { floatOffset = -9 }
         }
     }
 }
-
-// MARK: - Shapes
 
 private struct HappyEye: View {
     var body: some View {
         Arc(startDeg: 180, endDeg: 360)
-            .stroke(Color.white,
-                    style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
-            .frame(width: 20, height: 10)
+            .stroke(Color.white, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+            .frame(width: 16, height: 8)
     }
 }
-
 private struct SmilePath: Shape {
     func path(in rect: CGRect) -> Path {
         var p = Path()
-        p.addArc(center: CGPoint(x: rect.midX, y: rect.minY),
-                 radius: rect.width * 0.48,
-                 startAngle: .degrees(15),
-                 endAngle: .degrees(165),
-                 clockwise: false)
+        p.addArc(center: CGPoint(x: rect.midX, y: rect.minY), radius: rect.width * 0.48,
+                 startAngle: .degrees(15), endAngle: .degrees(165), clockwise: false)
         return p
     }
 }
-
-private struct Arc: Shape {
-    let startDeg: Double
-    let endDeg: Double
+private struct WorriedMouth: Shape {
     func path(in rect: CGRect) -> Path {
         var p = Path()
-        p.addArc(center: CGPoint(x: rect.midX, y: rect.midY),
-                 radius: rect.width / 2,
-                 startAngle: .degrees(startDeg),
-                 endAngle: .degrees(endDeg),
-                 clockwise: false)
+        p.addArc(center: CGPoint(x: rect.midX, y: rect.maxY), radius: rect.width * 0.48,
+                 startAngle: .degrees(195), endAngle: .degrees(345), clockwise: false)
+        return p
+    }
+}
+private struct Arc: Shape {
+    let startDeg: Double; let endDeg: Double
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.addArc(center: CGPoint(x: rect.midX, y: rect.midY), radius: rect.width / 2,
+                 startAngle: .degrees(startDeg), endAngle: .degrees(endDeg), clockwise: false)
         return p
     }
 }
 
-// MARK: - Previews
+// MARK: - Mock Data
+
+struct MockTx: Identifiable {
+    let id = UUID()
+    let label: String; let project: String; let amount: Double
+    let isExpense: Bool; let icon: String; let colorHex: String
+
+    static let samples: [MockTx] = [
+        MockTx(label: "Figma Pro",            project: "Design System", amount: 45,   isExpense: true,  icon: "paintbrush.fill", colorHex: "7C6FC4"),
+        MockTx(label: "Acompte client",       project: "App iOS v2",   amount: 2500, isExpense: false, icon: "briefcase.fill",  colorHex: "3DAA7D"),
+        MockTx(label: "Serveur DigitalOcean", project: "Infra",        amount: 28,   isExpense: true,  icon: "server.rack",     colorHex: "3A8FC4"),
+    ]
+}
 
 struct HomeView_Previews: PreviewProvider {
     static var previews: some View {
-        Group {
-            HomeView(context: PreviewSupport.context).preferredColorScheme(.light)
-            HomeView(context: PreviewSupport.context).preferredColorScheme(.dark)
-        }
+        HomeView(context: PreviewSupport.context)
     }
 }

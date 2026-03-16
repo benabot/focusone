@@ -21,6 +21,7 @@
 		3DC7867747D297188EC842F0 /* PremiumGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E68DBABE69C6C8B0B4AC3FF6 /* PremiumGate.swift */; };
 		446303425AF4EDA4FCF8DC09 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FF6390060191330879D5A5A /* SettingsView.swift */; };
 		44647569A67649C8914BFDC7 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 410D9A94C880A7AC3CEFCEA6 /* HomeView.swift */; };
+		AA1234BB5678CCDD /* ProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB9876AA1234DDEE /* ProjectsView.swift */; };
 		4AE307A45DEA6D545F638055 /* FocusOneApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CFD0149F3B43AF7FF2A92B9 /* FocusOneApp.swift */; };
 		4F363C9D817925EAE204ECFB /* StatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0E5F1791F759D7AB61A8AE3 /* StatsView.swift */; };
 		50217477BF97E24A938BA55F /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 230E623BA8E94532E0FF4F5B /* PaywallView.swift */; };
@@ -85,6 +86,7 @@
 		28EF1F43B7F5D39D431A4F71 /* HabitEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitEntity.swift; sourceTree = "<group>"; };
 		2D6282E2767F699CE2E02075 /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		410D9A94C880A7AC3CEFCEA6 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		BB9876AA1234DDEE /* ProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsView.swift; sourceTree = "<group>"; };
 		48987ACC8313102907A52ADB /* CompletionEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionEntity.swift; sourceTree = "<group>"; };
 		49094297EBEEDC3946985D42 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5012D3D8D761B586E77D7AC9 /* StatsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsViewModel.swift; sourceTree = "<group>"; };
@@ -132,6 +134,7 @@
 			isa = PBXGroup;
 			children = (
 				410D9A94C880A7AC3CEFCEA6 /* HomeView.swift */,
+				BB9876AA1234DDEE /* ProjectsView.swift */,
 				8CF7E9A77734869D9A8D46E6 /* HomeViewModel.swift */,
 			);
 			path = Home;
@@ -462,6 +465,7 @@
 				7C342419DA002545FE48A9BA /* HabitEntity.swift in Sources */,
 				D0C2C8252E82C2A21BEC6AF2 /* HabitRepository.swift in Sources */,
 				44647569A67649C8914BFDC7 /* HomeView.swift in Sources */,
+				AA1234BB5678CCDD /* ProjectsView.swift in Sources */,
 				7A8C50AC9794EF238970EDB9 /* HomeViewModel.swift in Sources */,
 				7FE033FE8AC858D6AB193FC1 /* IntroView.swift in Sources */,
 				0F5BF444137D01CB615FAA85 /* Localization.swift in Sources */,
