@@ -6,6 +6,9 @@ struct SettingsView: View {
     @State private var showPaywall = false
     @State private var showRemindersSheet = false
     @State private var showDayStartSheet = false
+    @State private var showICloudSheet = false
+    @State private var gateFeature: PremiumFeature?
+    @State private var showComingSoonAlert = false
     @Environment(\.colorScheme) private var colorScheme
 
     init(context: NSManagedObjectContext) {
@@ -29,7 +32,7 @@ struct SettingsView: View {
                     premiumSection
                 }
                 .padding(Theme.padding)
-                .padding(.bottom, 24)
+                .padding(.bottom, 116)
             }
         }
         .onAppear(perform: viewModel.load)
@@ -45,7 +48,9 @@ struct SettingsView: View {
         .onChange(of: viewModel.selectedThemeHex) {
             Task { await viewModel.save() }
         }
-        .sheet(isPresented: $showPaywall) {
+        .sheet(isPresented: $showPaywall, onDismiss: {
+            viewModel.refreshPremiumState()
+        }) {
             PaywallView()
         }
         .sheet(isPresented: $showRemindersSheet) {
@@ -55,6 +60,27 @@ struct SettingsView: View {
         .sheet(isPresented: $showDayStartSheet) {
             SettingsDayStartSheet(viewModel: viewModel)
                 .presentationDetents([.medium])
+        }
+        .sheet(isPresented: $showICloudSheet) {
+            SettingsInfoSheet(
+                title: L10n.text("settings.icloud"),
+                message: viewModel.iCloudInfoMessage
+            )
+        }
+        .alert(item: $gateFeature) { feature in
+            Alert(
+                title: Text(L10n.text(feature.gateTitleKey)),
+                message: Text(L10n.text(feature.gateMessageKey)),
+                primaryButton: .default(Text(L10n.text("premium.gate.cta"))) {
+                    showPaywall = true
+                },
+                secondaryButton: .cancel(Text(L10n.text("premium.gate.dismiss")))
+            )
+        }
+        .alert(L10n.text("paywall.alert.title"), isPresented: $showComingSoonAlert) {
+            Button(L10n.text("common.close"), role: .cancel) {}
+        } message: {
+            Text(L10n.text("paywall.alert.message"))
         }
     }
 
@@ -109,7 +135,7 @@ struct SettingsView: View {
             sectionTitle(L10n.text("settings.section.appearance"))
 
             settingsPanel {
-                SettingsValueRow(title: L10n.text("settings.theme"), value: viewModel.selectedThemeName)
+                SettingsValueRow(title: L10n.text("settings.theme"))
 
                 panelDivider
 
@@ -121,29 +147,24 @@ struct SettingsView: View {
                             Button {
                                 viewModel.selectedThemeHex = preset.primaryHex
                             } label: {
-                                VStack(spacing: 8) {
-                                    Circle()
-                                        .fill(preset.color)
-                                        .frame(width: 34, height: 34)
-                                        .overlay {
-                                            Circle()
-                                                .stroke(.white, lineWidth: isSelected ? 2 : 0)
+                                Circle()
+                                    .fill(preset.color)
+                                    .frame(width: 36, height: 36)
+                                    .overlay {
+                                        Circle()
+                                            .stroke(.white, lineWidth: isSelected ? 2 : 0)
+                                    }
+                                    .overlay {
+                                        if isSelected {
+                                            Image(systemName: "checkmark")
+                                                .font(.system(size: 11, weight: .bold))
+                                                .foregroundStyle(.white)
                                         }
-                                        .overlay {
-                                            if isSelected {
-                                                Image(systemName: "checkmark")
-                                                    .font(.system(size: 11, weight: .bold))
-                                                    .foregroundStyle(.white)
-                                            }
-                                        }
-
-                                    Text(L10n.text(preset.nameKey))
-                                        .font(.system(size: 11, weight: .semibold, design: .rounded))
-                                        .foregroundStyle(Theme.textSecondary(for: colorScheme))
-                                }
-                                .frame(width: 52)
+                                    }
+                                    .frame(width: 44, height: 44)
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel(L10n.text(preset.nameKey))
                         }
                     }
                     .padding(.horizontal, Theme.spacingM)
@@ -157,7 +178,11 @@ struct SettingsView: View {
             sectionTitle(L10n.text("settings.section.sync"))
 
             settingsPanel {
-                SettingsValueRow(title: L10n.text("settings.icloud"), value: viewModel.iCloudStatus)
+                navigationRow(
+                    title: L10n.text("settings.icloud"),
+                    value: viewModel.iCloudStatus,
+                    action: { showICloudSheet = true }
+                )
             }
         }
     }
@@ -167,20 +192,38 @@ struct SettingsView: View {
             sectionTitle(L10n.text("settings.section.premium"))
 
             VStack(alignment: .leading, spacing: 14) {
-                Text(L10n.text("settings.premium.card.title"))
+                Text(viewModel.premiumCardTitle)
                     .font(.system(size: 20, weight: .bold, design: .rounded))
                     .foregroundStyle(Theme.textPrimary(for: colorScheme))
 
-                Text(L10n.text("settings.premium.card.subtitle"))
+                Text(viewModel.premiumCardSubtitle)
                     .font(.system(size: 15, weight: .medium, design: .rounded))
                     .foregroundStyle(Theme.textSecondary(for: colorScheme))
                     .fixedSize(horizontal: false, vertical: true)
 
+                if let footnote = viewModel.premiumCardFootnote {
+                    Text(footnote)
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color(hex: Theme.presets[3].primaryHex))
+                }
+
                 PrimaryButton(
-                    title: L10n.text("settings.open_paywall"),
+                    title: viewModel.premiumButtonTitle,
                     tintHex: Theme.presets[3].primaryHex
                 ) {
                     showPaywall = true
+                }
+
+                panelDivider
+
+                contextActionRow(title: L10n.text("settings.premium.context.archives")) {
+                    openPremiumContext(.archives)
+                }
+
+                panelDivider
+
+                contextActionRow(title: L10n.text("settings.premium.context.next")) {
+                    openPremiumContext(.nextRoutine)
                 }
             }
             .padding(Theme.spacingM)
@@ -226,6 +269,25 @@ struct SettingsView: View {
         .buttonStyle(.plain)
     }
 
+    private func contextActionRow(title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: Theme.spacingS) {
+                Text(title)
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Theme.textPrimary(for: colorScheme))
+
+                Spacer(minLength: Theme.spacingS)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(Theme.accent)
+            }
+            .padding(.horizontal, Theme.spacingM)
+            .padding(.vertical, 15)
+        }
+        .buttonStyle(.plain)
+    }
+
     private func settingsPanel<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         VStack(spacing: 0) {
             content()
@@ -251,6 +313,52 @@ struct SettingsView: View {
         Text(title)
             .font(.system(size: 13, weight: .semibold, design: .rounded))
             .foregroundStyle(Theme.textSecondary(for: colorScheme))
+    }
+
+    private func openPremiumContext(_ feature: PremiumFeature) {
+        let gate = PremiumGate()
+
+        if gate.canAccess(feature) {
+            showComingSoonAlert = true
+        } else {
+            gateFeature = feature
+        }
+    }
+}
+
+private struct SettingsInfoSheet: View {
+    let title: String
+    let message: String
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 20) {
+                Text(message)
+                    .font(.system(size: 17, weight: .medium, design: .rounded))
+                    .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Spacer(minLength: 0)
+            }
+            .padding(20)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(
+                Color(hex: "FFF8F0")
+                    .ignoresSafeArea()
+            )
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(L10n.text("common.close")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
     }
 }
 

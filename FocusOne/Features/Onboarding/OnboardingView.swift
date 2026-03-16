@@ -41,10 +41,9 @@ private struct OnboardingContent: View {
     @FocusState private var isNameFocused: Bool
     @State private var showRemindersSheet = false
     @State private var showDayStartSheet = false
+    @State private var footerHeight: CGFloat = 0
 
     private let iconColumns = Array(repeating: GridItem(.fixed(48), spacing: 12), count: 5)
-    private let colorColumns = Array(repeating: GridItem(.fixed(36), spacing: 14), count: 6)
-
     private var displayedIconOptions: [String] {
         Array(iconOptions.prefix(10))
     }
@@ -99,6 +98,11 @@ private struct OnboardingContent: View {
         onCancel == nil ? nil : L10n.text("onboarding.cancel")
     }
 
+    private var previewSummary: String {
+        let format = L10n.text("onboarding.preview.summary")
+        return String.localizedStringWithFormat(format, reminderSummary, L10n.dayHourLabel(viewModel.dayStartHour))
+    }
+
     var body: some View {
         ZStack {
             Theme.backgroundGradient(for: selectedPreset, scheme: colorScheme)
@@ -115,7 +119,7 @@ private struct OnboardingContent: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(Theme.padding)
-                .padding(.bottom, 132)
+                .padding(.bottom, footerHeight + Theme.spacingL)
             }
             .scrollIndicators(.hidden)
         }
@@ -139,6 +143,12 @@ private struct OnboardingContent: View {
                     onCancel?()
                 }
             )
+            .background(
+                GeometryReader { proxy in
+                    Color.clear
+                        .preference(key: FooterHeightPreferenceKey.self, value: proxy.size.height)
+                }
+            )
         }
         .sheet(isPresented: $showRemindersSheet) {
             RemindersSheet(viewModel: viewModel)
@@ -153,6 +163,7 @@ private struct OnboardingContent: View {
                 viewModel.errorMessage = nil
             }
         }
+        .onPreferenceChange(FooterHeightPreferenceKey.self) { footerHeight = $0 }
     }
 
     private var header: some View {
@@ -172,8 +183,7 @@ private struct OnboardingContent: View {
         RoutinePreviewCard(
             name: previewName,
             iconSymbol: viewModel.selectedIconSymbol,
-            reminderSummary: reminderSummary,
-            dayStartLabel: L10n.dayHourLabel(viewModel.dayStartHour),
+            summary: previewSummary,
             tintHex: viewModel.selectedThemeHex
         )
     }
@@ -220,19 +230,22 @@ private struct OnboardingContent: View {
         VStack(alignment: .leading, spacing: Theme.spacingS) {
             FormSectionTitle(title: L10n.text("onboarding.theme"))
 
-            ConfigurationSurface {
-                LazyVGrid(columns: colorColumns, alignment: .leading, spacing: 14) {
-                    ForEach(Theme.presets) { preset in
-                        ColorDot(
-                            hex: preset.primaryHex,
-                            isSelected: viewModel.selectedThemeHex == preset.primaryHex
-                        ) {
+            ConfigurationSurface(padding: Theme.spacingS) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(Theme.presets) { preset in
+                            ColorDot(
+                                hex: preset.primaryHex,
+                                isSelected: viewModel.selectedThemeHex == preset.primaryHex
+                            ) {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                                 viewModel.selectedThemeHex = preset.primaryHex
                             }
+                            }
+                            .accessibilityLabel(L10n.text(preset.nameKey))
                         }
-                        .accessibilityLabel(L10n.text(preset.nameKey))
                     }
+                    .padding(.horizontal, 2)
                 }
             }
         }
@@ -268,6 +281,14 @@ private struct OnboardingContent: View {
         Divider()
             .overlay(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.75))
             .padding(.horizontal, 18)
+    }
+}
+
+private struct FooterHeightPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 
@@ -312,8 +333,7 @@ private struct ConfigurationSurface<Content: View>: View {
 private struct RoutinePreviewCard: View {
     let name: String
     let iconSymbol: String
-    let reminderSummary: String
-    let dayStartLabel: String
+    let summary: String
     let tintHex: String
 
     @Environment(\.colorScheme) private var colorScheme
@@ -338,7 +358,7 @@ private struct RoutinePreviewCard: View {
                             .foregroundStyle(Theme.textPrimary(for: colorScheme))
                             .lineLimit(2)
 
-                        Text("\(reminderSummary) • \(dayStartLabel)")
+                        Text(summary)
                             .font(.system(size: 15, weight: .medium, design: .rounded))
                             .foregroundStyle(Theme.textSecondary(for: colorScheme))
                             .lineLimit(1)
@@ -398,7 +418,7 @@ private struct ColorDot: View {
             ZStack {
                 Circle()
                     .fill(Color(hex: hex))
-                    .frame(width: 36, height: 36)
+                    .frame(width: 34, height: 34)
 
                 if isSelected {
                     Image(systemName: "checkmark")
@@ -406,17 +426,17 @@ private struct ColorDot: View {
                         .foregroundStyle(.white)
                 }
             }
-            .frame(width: 46, height: 46)
+            .frame(width: 42, height: 42)
             .overlay {
                 if isSelected {
                     ZStack {
                         Circle()
                             .stroke(.white, lineWidth: 2)
-                            .frame(width: 40, height: 40)
+                            .frame(width: 38, height: 38)
 
                         Circle()
                             .stroke(Color(hex: hex).opacity(0.42), lineWidth: 2)
-                            .frame(width: 46, height: 46)
+                            .frame(width: 42, height: 42)
                     }
                 }
             }
@@ -540,15 +560,15 @@ private struct ConfigurationFooterBar: View {
     }
 
     private var primaryTextColor: Color {
-        isEnabled ? .white : Theme.textSecondary(for: colorScheme)
+        isEnabled ? .white : Color(hex: tintHex).opacity(colorScheme == .dark ? 0.78 : 0.72)
     }
 
     private var primaryBackgroundColor: Color {
-        isEnabled ? Color(hex: tintHex) : Color.white.opacity(colorScheme == .dark ? 0.12 : 0.82)
+        isEnabled ? Color(hex: tintHex) : Color(hex: tintHex).opacity(colorScheme == .dark ? 0.20 : 0.14)
     }
 
     private var primaryBorderColor: Color {
-        isEnabled ? Color.clear : Color(hex: tintHex).opacity(0.16)
+        isEnabled ? Color.clear : Color(hex: tintHex).opacity(colorScheme == .dark ? 0.28 : 0.22)
     }
 }
 

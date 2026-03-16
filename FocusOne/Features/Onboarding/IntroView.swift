@@ -11,37 +11,30 @@ struct SplashView: View {
         showsIntroFlow ? L10n.text("common.cta.get_started") : L10n.text("common.cta.continue")
     }
 
-    private var showsSecondaryAction: Bool {
-        showsIntroFlow
-    }
-
     var body: some View {
         ZStack {
             Theme.backgroundGradient(for: Theme.presets[1], scheme: colorScheme)
                 .ignoresSafeArea()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: Theme.spacing) {
-                    splashArtwork
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, Theme.spacingM)
+                VStack(alignment: .leading, spacing: AppSpacing.l) {
+                    SplashShowcaseCard()
+                        .padding(.top, AppSpacing.m)
 
                     Text(L10n.text("splash.title"))
                         .font(.system(size: 42, weight: .bold, design: .rounded))
-                        .foregroundStyle(Theme.textPrimary(for: colorScheme))
+                        .foregroundStyle(AppColors.textPrimary(for: colorScheme))
 
                     Text(L10n.text("splash.subtitle"))
                         .font(.system(size: 20, weight: .medium, design: .rounded))
-                        .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                        .foregroundStyle(AppColors.textSecondary(for: colorScheme))
                         .fixedSize(horizontal: false, vertical: true)
 
-                    VStack(alignment: .leading, spacing: Theme.spacingXS) {
-                        bulletRow(L10n.text("splash.bullet.one"))
-                        bulletRow(L10n.text("splash.bullet.two"))
-                        bulletRow(L10n.text("splash.bullet.three"))
+                    VStack(alignment: .leading, spacing: AppSpacing.xs) {
+                        splashBullet(L10n.text("splash.bullet.one"))
+                        splashBullet(L10n.text("splash.bullet.two"))
+                        splashBullet(L10n.text("splash.bullet.three"))
                     }
-
-                    Spacer(minLength: Theme.spacingXL)
                 }
                 .padding(Theme.padding)
                 .padding(.bottom, 120)
@@ -56,10 +49,10 @@ struct SplashView: View {
                     action: onPrimaryAction
                 )
 
-                if showsSecondaryAction {
+                if showsIntroFlow {
                     Button(L10n.text("common.cta.skip"), action: onSecondaryAction)
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                        .foregroundStyle(AppColors.textSecondary(for: colorScheme))
                         .buttonStyle(.plain)
                         .padding(.vertical, 4)
                 }
@@ -74,50 +67,16 @@ struct SplashView: View {
         }
     }
 
-    private func bulletRow(_ text: String) -> some View {
-        HStack(spacing: Theme.spacingXS) {
+    private func splashBullet(_ text: String) -> some View {
+        HStack(spacing: AppSpacing.xs) {
             Image(systemName: "circle.fill")
                 .font(.system(size: 7, weight: .semibold))
-                .foregroundStyle(Theme.textSecondary(for: colorScheme).opacity(0.8))
+                .foregroundStyle(AppColors.textSecondary(for: colorScheme).opacity(0.8))
 
             Text(text)
-                .font(.system(size: 17, weight: .medium, design: .rounded))
-                .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                .font(AppTypography.body)
+                .foregroundStyle(AppColors.textSecondary(for: colorScheme))
         }
-    }
-
-    private var splashArtwork: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 48, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(hex: "FFE2D1"),
-                            Color(hex: "FFDDB6"),
-                            Color(hex: "CCECFF")
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(height: 220)
-
-            Circle()
-                .fill(Color.white.opacity(0.55))
-                .frame(width: 120, height: 120)
-                .offset(x: -96, y: -56)
-
-            Circle()
-                .fill(Color(hex: "FF8A5B").opacity(0.3))
-                .frame(width: 96, height: 96)
-                .offset(x: 94, y: 58)
-
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(Color.white.opacity(0.44))
-                .frame(width: 154, height: 84)
-                .offset(x: 12, y: -8)
-        }
-        .shadow(color: .black.opacity(0.04), radius: 12, x: 0, y: 8)
     }
 }
 
@@ -138,21 +97,9 @@ struct IntroWalkthroughView: View {
     @State private var currentPage = 0
 
     private let pages: [IntroPage] = [
-        IntroPage(
-            titleKey: "intro.page.one.title",
-            subtitleKey: "intro.page.one.subtitle",
-            kind: .singleFocus
-        ),
-        IntroPage(
-            titleKey: "intro.page.two.title",
-            subtitleKey: "intro.page.two.subtitle",
-            kind: .streak
-        ),
-        IntroPage(
-            titleKey: "intro.page.three.title",
-            subtitleKey: "intro.page.three.subtitle",
-            kind: .setup
-        )
+        IntroPage(titleKey: "intro.page.one.title", subtitleKey: "intro.page.one.subtitle", kind: .singleFocus),
+        IntroPage(titleKey: "intro.page.two.title", subtitleKey: "intro.page.two.subtitle", kind: .streak),
+        IntroPage(titleKey: "intro.page.three.title", subtitleKey: "intro.page.three.subtitle", kind: .setup)
     ]
 
     private var isLastPage: Bool {
@@ -160,28 +107,40 @@ struct IntroWalkthroughView: View {
     }
 
     private var primaryTitle: String {
-        isLastPage ? L10n.text("intro.get_started") : L10n.text("common.cta.continue")
+        isLastPage ? L10n.text("intro.get_started") : L10n.text("intro.continue")
     }
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color(hex: "FFF0E4"), Color(hex: "FFF9F3")],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            Theme.backgroundGradient(for: Theme.presets[0], scheme: colorScheme)
+                .ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: Theme.spacingL) {
                 TabView(selection: $currentPage) {
                     ForEach(Array(pages.enumerated()), id: \.offset) { index, page in
-                        IntroPageCard(page: page)
-                            .tag(index)
-                            .padding(.horizontal, Theme.padding)
+                        VStack(spacing: 0) {
+                            OnboardingFeatureCard(
+                                title: L10n.text(page.titleKey),
+                                message: L10n.text(page.subtitleKey)
+                            ) {
+                                switch page.kind {
+                                case .singleFocus:
+                                    SingleFocusVisual()
+                                case .streak:
+                                    StreakTrackVisual()
+                                case .setup:
+                                    SetupStepsVisual()
+                                }
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .tag(index)
+                        .padding(.horizontal, Theme.padding)
+                        .padding(.top, Theme.spacingXS)
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
                 HStack(spacing: 8) {
                     ForEach(pages.indices, id: \.self) { index in
@@ -203,9 +162,9 @@ struct IntroWalkthroughView: View {
                     action: handlePrimaryAction
                 )
 
-                Button(L10n.text("common.cta.skip"), action: onSkip)
+                Button(L10n.text("intro.skip"), action: onSkip)
                     .font(.system(size: 15, weight: .semibold, design: .rounded))
-                    .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                    .foregroundStyle(AppColors.textSecondary(for: colorScheme))
                     .buttonStyle(.plain)
                     .padding(.vertical, 4)
             }
@@ -224,6 +183,7 @@ struct IntroWalkthroughView: View {
             onContinue()
             return
         }
+
         withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
             currentPage += 1
         }
@@ -233,103 +193,108 @@ struct IntroWalkthroughView: View {
 private struct IntroPage {
     let titleKey: String
     let subtitleKey: String
-    let kind: OnboardingVisualKind
+    let kind: IntroVisualKind
 }
 
-private struct IntroPageCard: View {
-    let page: IntroPage
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            Spacer(minLength: 24)
-
-            OnboardingFeatureCardVisual(kind: page.kind)
-                .frame(maxWidth: .infinity)
-
-            Text(L10n.text(page.titleKey))
-                .font(.system(size: 34, weight: .bold, design: .rounded))
-                .foregroundStyle(Theme.textPrimary(for: colorScheme))
-
-            Text(L10n.text(page.subtitleKey))
-                .font(.system(size: 19, weight: .medium, design: .rounded))
-                .foregroundStyle(Theme.textSecondary(for: colorScheme))
-                .fixedSize(horizontal: false, vertical: true)
-
-            Spacer()
-        }
-        .padding(28)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(
-            RoundedRectangle(cornerRadius: 34, style: .continuous)
-                .fill(Color.white.opacity(colorScheme == .dark ? 0.12 : 0.62))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 34, style: .continuous)
-                .stroke(Color.white.opacity(colorScheme == .dark ? 0.1 : 0.4), lineWidth: 1)
-        )
-    }
-}
-
-private enum OnboardingVisualKind {
+private enum IntroVisualKind {
     case singleFocus
     case streak
     case setup
 }
 
-private struct OnboardingFeatureCardVisual: View {
-    let kind: OnboardingVisualKind
-
-    @Environment(\.colorScheme) private var colorScheme
-
+private struct SplashShowcaseCard: View {
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 36, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(hex: Theme.defaultThemeHex).opacity(0.20),
-                            Color.white.opacity(colorScheme == .dark ? 0.12 : 0.62)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(height: 220)
-
-            switch kind {
-            case .singleFocus:
-                singleFocusVisual
-            case .streak:
-                streakVisual
-            case .setup:
-                setupVisual
+        AppSurface(padding: AppSpacing.l) {
+            VStack(spacing: AppSpacing.m) {
+                activeRoutineRow
+                streakRow
+                setupRow
             }
         }
-        .shadow(color: .black.opacity(0.04), radius: 12, x: 0, y: 8)
     }
 
-    private var singleFocusVisual: some View {
+    private var activeRoutineRow: some View {
+        RoundedRectangle(cornerRadius: 24, style: .continuous)
+            .fill(Color(hex: Theme.defaultThemeHex))
+            .frame(height: 70)
+            .overlay(alignment: .leading) {
+                HStack(spacing: 12) {
+                    Circle()
+                        .fill(Color.white.opacity(0.24))
+                        .frame(width: 34, height: 34)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .fill(Color.white.opacity(0.94))
+                            .frame(width: 118, height: 11)
+
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .fill(Color.white.opacity(0.54))
+                            .frame(width: 86, height: 9)
+                    }
+                }
+                .padding(.leading, 20)
+            }
+    }
+
+    private var streakRow: some View {
+        HStack(spacing: 10) {
+            ForEach(0..<7, id: \.self) { index in
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(index < 5 ? Color(hex: Theme.defaultThemeHex) : Color(hex: Theme.defaultThemeHex).opacity(index == 5 ? 0.2 : 0.08))
+                    .frame(height: 56)
+            }
+        }
+    }
+
+    private var setupRow: some View {
+        HStack(spacing: 10) {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.white.opacity(0.76))
+                .frame(height: 48)
+                .overlay(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .fill(Color(hex: "D9C6B8"))
+                        .frame(width: 108, height: 10)
+                        .padding(.leading, 16)
+                }
+
+            HStack(spacing: 8) {
+                ForEach([Theme.defaultThemeHex, "FFB347", "34C9A5"], id: \.self) { hex in
+                    Circle()
+                        .fill(Color(hex: hex))
+                        .frame(width: 22, height: 22)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 13)
+            .background(Color.white.opacity(0.72), in: Capsule())
+        }
+    }
+}
+
+private struct SingleFocusVisual: View {
+    var body: some View {
         VStack(spacing: 14) {
-            blurredRow(width: 92, offset: -18, opacity: 0.42)
+            mutedRow(width: 92, offset: -18)
             activeRow
-            blurredRow(width: 78, offset: 18, opacity: 0.42)
+            mutedRow(width: 78, offset: 18)
         }
         .padding(.horizontal, 26)
     }
 
-    private func blurredRow(width: CGFloat, offset: CGFloat, opacity: Double) -> some View {
+    private func mutedRow(width: CGFloat, offset: CGFloat) -> some View {
         RoundedRectangle(cornerRadius: 20, style: .continuous)
-            .fill(Color.white.opacity(opacity))
+            .fill(Color.white.opacity(0.46))
             .frame(height: 52)
             .overlay(alignment: .leading) {
                 HStack(spacing: 10) {
                     Circle()
-                        .fill(Color.white.opacity(0.56))
+                        .fill(Color.white.opacity(0.58))
                         .frame(width: 24, height: 24)
 
                     RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .fill(Color.white.opacity(0.72))
+                        .fill(Color.white.opacity(0.74))
                         .frame(width: width, height: 10)
                 }
                 .padding(.leading, 18)
@@ -360,12 +325,16 @@ private struct OnboardingFeatureCardVisual: View {
                 .padding(.leading, 20)
             }
     }
+}
 
-    private var streakVisual: some View {
+private struct StreakTrackVisual: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
         HStack(spacing: 10) {
             ForEach(0..<7, id: \.self) { index in
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(streakCellFill(for: index))
+                    .fill(fill(for: index))
                     .frame(height: 74)
                     .overlay {
                         if index == 5 {
@@ -375,31 +344,35 @@ private struct OnboardingFeatureCardVisual: View {
                         }
                     }
                     .overlay(alignment: .bottom) {
-                        Circle()
-                            .fill(index < 5 ? Color.white.opacity(0.92) : Color.clear)
-                            .frame(width: 8, height: 8)
-                            .padding(.bottom, 12)
+                        if index < 5 {
+                            Circle()
+                                .fill(Color.white.opacity(0.92))
+                                .frame(width: 8, height: 8)
+                                .padding(.bottom, 12)
+                        }
                     }
             }
         }
         .padding(.horizontal, 22)
     }
 
-    private func streakCellFill(for index: Int) -> Color {
+    private func fill(for index: Int) -> Color {
         if index < 5 { return Color(hex: Theme.defaultThemeHex) }
         if index == 5 { return Color(hex: Theme.defaultThemeHex).opacity(0.18) }
-        return Color.white.opacity(colorScheme == .dark ? 0.1 : 0.46)
+        return Color.white.opacity(colorScheme == .dark ? 0.10 : 0.46)
     }
+}
 
-    private var setupVisual: some View {
+private struct SetupStepsVisual: View {
+    var body: some View {
         VStack(spacing: 14) {
             setupRow(symbol: "textformat", width: 126)
             setupRow(symbol: "sparkles", width: 74)
 
             HStack(spacing: 12) {
-                setupColorDot(Color(hex: Theme.defaultThemeHex))
-                setupColorDot(Color(hex: "FFB347"))
-                setupColorDot(Color(hex: "34C9A5"))
+                colorDot(Theme.defaultThemeHex)
+                colorDot("FFB347")
+                colorDot("34C9A5")
             }
         }
         .padding(.horizontal, 28)
@@ -430,13 +403,13 @@ private struct OnboardingFeatureCardVisual: View {
             }
     }
 
-    private func setupColorDot(_ color: Color) -> some View {
+    private func colorDot(_ hex: String) -> some View {
         Circle()
-            .fill(color)
+            .fill(Color(hex: hex))
             .frame(width: 28, height: 28)
             .overlay {
                 Circle()
-                    .stroke(Color.white.opacity(0.9), lineWidth: 2)
+                    .stroke(Color.white.opacity(0.92), lineWidth: 2)
                     .padding(2)
             }
     }

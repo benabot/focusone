@@ -64,6 +64,56 @@ enum Theme {
     }
 }
 
+enum AppSpacing {
+    static let xxs: CGFloat = 4
+    static let xs: CGFloat = Theme.spacingXS
+    static let s: CGFloat = Theme.spacingS
+    static let m: CGFloat = Theme.spacingM
+    static let l: CGFloat = Theme.spacingL
+    static let xl: CGFloat = Theme.spacingXL
+    static let xxl: CGFloat = 40
+}
+
+enum AppRadius {
+    static let small: CGFloat = Theme.radiusSmall
+    static let medium: CGFloat = Theme.radiusMedium
+    static let large: CGFloat = 28
+    static let capsule: CGFloat = 999
+}
+
+enum AppTypography {
+    static let overline = Font.system(size: 11, weight: .bold, design: .rounded)
+    static let section = Font.system(size: 13, weight: .semibold, design: .rounded)
+    static let body = Font.system(size: 17, weight: .medium, design: .rounded)
+    static let bodySmall = Font.system(size: 15, weight: .medium, design: .rounded)
+    static let title = Font.system(size: 34, weight: .bold, design: .rounded)
+    static let heroValue = Font.system(size: 82, weight: .heavy, design: .rounded)
+    static let cardValue = Font.system(size: 28, weight: .bold, design: .rounded)
+    static let cta = Font.system(size: 18, weight: .bold, design: .rounded)
+}
+
+enum AppColors {
+    static let accent = Theme.accent
+    static let canvas = Theme.backgroundTint
+    static let success = Color(hex: "48A16C")
+
+    static func textPrimary(for scheme: ColorScheme) -> Color {
+        Theme.textPrimary(for: scheme)
+    }
+
+    static func textSecondary(for scheme: ColorScheme) -> Color {
+        Theme.textSecondary(for: scheme)
+    }
+
+    static func surface(for scheme: ColorScheme) -> Color {
+        Theme.surface(for: scheme)
+    }
+
+    static func elevatedSurface(for scheme: ColorScheme) -> Color {
+        scheme == .dark ? Color.white.opacity(0.14) : Color.white.opacity(0.96)
+    }
+}
+
 extension Color {
     init(hex: String) {
         let clean = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)

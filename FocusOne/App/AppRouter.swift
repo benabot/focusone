@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AppRouter: View {
     @Environment(\.managedObjectContext) private var context
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage(AppStorageKeys.hasOnboarded) private var hasOnboarded = false
 
     private enum Route: Equatable {
@@ -45,6 +46,9 @@ struct AppRouter: View {
     @State private var route: Route = .loading
     @State private var hasActiveHabit = false
     @State private var selectedTab: MainTab = .home
+    @State private var premiumPrompt: PremiumPromptKind?
+    @State private var showPaywall = false
+    @State private var premiumPromptCheckToken = 0
 
     var body: some View {
         Group {
@@ -82,6 +86,42 @@ struct AppRouter: View {
                 mainTabs
             }
         }
+        .onChange(of: route) { newRoute in
+            guard newRoute == .mainTabs else { return }
+            premiumPromptCheckToken += 1
+        }
+        .onChange(of: scenePhase) { newPhase in
+            guard newPhase == .active else { return }
+            premiumPromptCheckToken += 1
+        }
+        .task(id: premiumPromptCheckToken) {
+            guard premiumPromptCheckToken > 0 else { return }
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            await maybePresentPremiumPromptIfNeeded()
+        }
+        .sheet(item: $premiumPrompt) { prompt in
+            let content = premiumPromptContent(for: prompt)
+            PremiumLifecycleSheet(
+                badge: content.badge,
+                title: content.title,
+                message: content.body,
+                secondary: content.secondary,
+                primaryTitle: content.primaryTitle,
+                dismissTitle: content.dismissTitle,
+                accentHex: Theme.presets[3].primaryHex
+            ) {
+                premiumPrompt = nil
+                showPaywall = true
+            } onDismiss: {
+                premiumPrompt = nil
+            } onAppear: {
+                markPromptAsShown(prompt)
+            }
+            .presentationDetents([.medium])
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+        }
     }
 
     private var loadingView: some View {
@@ -111,7 +151,7 @@ struct AppRouter: View {
     @MainActor
     private func resolveRoute() {
         refreshHabitState()
-        route = .splash
+        route = shouldSkipSplashForDebug ? resumeRoute : .splash
     }
 
     @MainActor
@@ -137,6 +177,14 @@ struct AppRouter: View {
         !hasOnboarded && !hasActiveHabit
     }
 
+    private var shouldSkipSplashForDebug: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-SkipSplashForDebug")
+        #else
+        false
+        #endif
+    }
+
     private var resumeRoute: Route {
         hasActiveHabit ? .mainTabs : .onboarding
     }
@@ -158,6 +206,59 @@ struct AppRouter: View {
                 .padding(.horizontal, Theme.padding)
                 .padding(.top, Theme.spacingXS)
                 .padding(.bottom, Theme.spacingXS)
+        }
+        .onAppear {
+            premiumPromptCheckToken += 1
+        }
+    }
+
+    @MainActor
+    private func maybePresentPremiumPromptIfNeeded() {
+        guard route == .mainTabs, premiumPrompt == nil, !showPaywall else { return }
+
+        let premiumGate = PremiumGate()
+        guard let prompt = premiumGate.pendingLifecyclePrompt() else { return }
+        premiumPrompt = prompt
+    }
+
+    @MainActor
+    private func markPromptAsShown(_ prompt: PremiumPromptKind) {
+        var premiumGate = PremiumGate()
+        premiumGate.markPromptShown(prompt)
+    }
+
+    private func premiumPromptContent(for prompt: PremiumPromptKind) -> PremiumPromptContent {
+        let gate = PremiumGate()
+
+        switch prompt {
+        case .midTrial:
+            let format = L10n.text("premium.prompt.trial.body")
+            return PremiumPromptContent(
+                badge: L10n.text("premium.trial.badge"),
+                title: L10n.text("premium.prompt.trial.title"),
+                body: String.localizedStringWithFormat(format, gate.trialEndDateString() ?? ""),
+                secondary: L10n.text("premium.prompt.trial.secondary"),
+                primaryTitle: L10n.text("premium.prompt.trial.cta"),
+                dismissTitle: L10n.text("premium.prompt.trial.dismiss")
+            )
+        case .endingSoon:
+            return PremiumPromptContent(
+                badge: L10n.text("premium.trial.badge"),
+                title: L10n.text("premium.prompt.ending.title"),
+                body: L10n.text("premium.prompt.ending.body"),
+                secondary: L10n.text("premium.prompt.ending.secondary"),
+                primaryTitle: L10n.text("premium.prompt.ending.cta"),
+                dismissTitle: L10n.text("premium.prompt.ending.dismiss")
+            )
+        case .expired:
+            return PremiumPromptContent(
+                badge: L10n.text("paywall.badge"),
+                title: L10n.text("premium.prompt.expired.title"),
+                body: L10n.text("premium.prompt.expired.body"),
+                secondary: L10n.text("premium.prompt.expired.secondary"),
+                primaryTitle: L10n.text("premium.prompt.expired.cta"),
+                dismissTitle: L10n.text("premium.prompt.expired.dismiss")
+            )
         }
     }
 }
@@ -212,5 +313,67 @@ private struct CompactTabBar: View {
             x: 0,
             y: 10
         )
+    }
+}
+
+private struct PremiumPromptContent {
+    let badge: String
+    let title: String
+    let body: String
+    let secondary: String
+    let primaryTitle: String
+    let dismissTitle: String
+}
+
+private struct PremiumLifecycleSheet: View {
+    let badge: String
+    let title: String
+    let message: String
+    let secondary: String
+    let primaryTitle: String
+    let dismissTitle: String
+    let accentHex: String
+    let onPrimaryAction: () -> Void
+    let onDismiss: () -> Void
+    let onAppear: () -> Void
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.spacingL) {
+            Text(badge)
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(Color(hex: accentHex))
+                .kerning(0.8)
+
+            VStack(alignment: .leading, spacing: Theme.spacingS) {
+                Text(title)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(Theme.textPrimary(for: colorScheme))
+
+                Text(message)
+                    .font(.system(size: 17, weight: .medium, design: .rounded))
+                    .foregroundStyle(Theme.textPrimary(for: colorScheme))
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(secondary)
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            VStack(spacing: Theme.spacingXS) {
+                PrimaryButton(title: primaryTitle, tintHex: accentHex, action: onPrimaryAction)
+
+                Button(dismissTitle, action: onDismiss)
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                    .buttonStyle(.plain)
+            }
+        }
+        .padding(Theme.spacingL)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Theme.backgroundGradient(for: Theme.presets[3], scheme: colorScheme).ignoresSafeArea())
+        .onAppear(perform: onAppear)
     }
 }

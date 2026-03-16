@@ -8,6 +8,7 @@ final class SettingsViewModel: ObservableObject {
     @Published var dayStartHour = 4
     @Published var selectedThemeHex = Theme.defaultThemeHex
     @Published var iCloudStatus = ""
+    @Published private(set) var premiumAccessState: PremiumAccessState = PremiumGate().accessState()
 
     private let context: NSManagedObjectContext
     private let notificationsService: NotificationsService
@@ -25,6 +26,7 @@ final class SettingsViewModel: ObservableObject {
 
     func load() {
         refreshICloudStatus()
+        refreshPremiumState()
 
         let repository = HabitRepository(context: context)
         guard let active = repository.fetchActiveHabit() else { return }
@@ -128,7 +130,71 @@ final class SettingsViewModel: ObservableObject {
         return L10n.text(preset.nameKey)
     }
 
+    var premiumCardTitle: String {
+        switch premiumAccessState {
+        case .trial:
+            return L10n.text("settings.premium.card.title.trial")
+        case .free:
+            return L10n.text("settings.premium.card.title.free")
+        case .premium:
+            return L10n.text("settings.premium.card.title.active")
+        }
+    }
+
+    var premiumCardSubtitle: String {
+        switch premiumAccessState {
+        case .trial:
+            return L10n.text("settings.premium.card.subtitle.trial")
+        case .free:
+            return L10n.text("settings.premium.card.subtitle.free")
+        case .premium:
+            return L10n.text("settings.premium.card.subtitle.active")
+        }
+    }
+
+    var premiumCardFootnote: String? {
+        let gate = PremiumGate()
+
+        switch premiumAccessState {
+        case .trial:
+            return gate.daysRemainingText()
+        case .premium:
+            return L10n.text("premium.state.active")
+        case .free:
+            return nil
+        }
+    }
+
+    var premiumButtonTitle: String {
+        switch premiumAccessState {
+        case .premium:
+            return L10n.text("settings.manage_premium")
+        case .trial, .free:
+            return L10n.text("settings.open_paywall")
+        }
+    }
+
+    var iCloudInfoMessage: String {
+        switch iCloudStatus {
+        case L10n.text("settings.status.icloud.active"):
+            return L10n.text("settings.icloud.info.active")
+        case L10n.text("settings.status.icloud.unavailable"):
+            return L10n.text("settings.icloud.info.unavailable")
+        default:
+            return L10n.text("settings.icloud.info.not_configured")
+        }
+    }
+
+    func refreshPremiumState() {
+        premiumAccessState = PremiumGate().accessState()
+    }
+
     private func refreshICloudStatus() {
+        #if targetEnvironment(simulator)
+        iCloudStatus = L10n.text("settings.status.icloud.unavailable")
+        return
+        #endif
+
         if FileManager.default.ubiquityIdentityToken != nil {
             iCloudStatus = L10n.text("settings.status.icloud.active")
         } else {

@@ -105,6 +105,8 @@ final class OnboardingViewModel: ObservableObject {
         )
 
         let habit = created.toDomain()
+        var premiumGate = PremiumGate()
+        premiumGate.startTrialIfNeeded()
         UserDefaults.standard.set(notificationsEnabled, forKey: AppStorageKeys.notificationsEnabled)
         await syncNotifications(for: habit, shouldReschedule: true)
         saveWidgetSnapshot(for: habit, repository: repository)

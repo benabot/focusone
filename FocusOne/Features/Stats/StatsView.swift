@@ -4,24 +4,39 @@ import CoreData
 struct StatsView: View {
     @StateObject private var viewModel: StatsViewModel
     @Environment(\.colorScheme) private var colorScheme
+    @State private var showPaywall = false
+    @State private var gateFeature: PremiumFeature?
+    @State private var showComingSoonAlert = false
 
     init(context: NSManagedObjectContext) {
         _viewModel = StateObject(wrappedValue: StatsViewModel(context: context))
     }
 
-    var body: some View {
-        let preset = Theme.preset(for: viewModel.themeHex ?? Theme.defaultThemeHex)
+    private var preset: ThemePreset {
+        Theme.preset(for: viewModel.themeHex ?? Theme.defaultThemeHex)
+    }
 
+    private var accentColor: Color {
+        Color(hex: preset.primaryHex)
+    }
+
+    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+
+    var body: some View {
         ZStack {
             Theme.backgroundGradient(for: preset, scheme: colorScheme)
                 .ignoresSafeArea()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: AppSpacing.l) {
                     header
-                    streakCards(preset: preset)
-                    ratesRow(preset: preset)
-                    monthSection(preset: preset)
+
+                    if viewModel.habitIconSymbol == nil {
+                        emptyState
+                    } else {
+                        metricsGrid
+                        monthSection
+                    }
                 }
                 .padding(.horizontal, Theme.padding)
                 .padding(.top, 20)
@@ -29,137 +44,189 @@ struct StatsView: View {
             }
         }
         .onAppear(perform: viewModel.load)
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+        }
+        .alert(item: $gateFeature) { feature in
+            Alert(
+                title: Text(L10n.text(feature.gateTitleKey)),
+                message: Text(L10n.text(feature.gateMessageKey)),
+                primaryButton: .default(Text(L10n.text("premium.gate.cta"))) {
+                    showPaywall = true
+                },
+                secondaryButton: .cancel(Text(L10n.text("premium.gate.dismiss")))
+            )
+        }
+        .alert(L10n.text("paywall.alert.title"), isPresented: $showComingSoonAlert) {
+            Button(L10n.text("common.close"), role: .cancel) {}
+        } message: {
+            Text(L10n.text("paywall.alert.message"))
+        }
     }
-
-    // MARK: — Header
 
     private var header: some View {
-        HStack(spacing: Theme.spacingS) {
-            if let symbol = viewModel.habitIconSymbol {
-                Image(systemName: symbol)
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(Theme.textPrimary(for: colorScheme))
-            }
+        VStack(alignment: .leading, spacing: 6) {
             Text(L10n.text("stats.title"))
-                .font(.system(size: 34, weight: .bold, design: .rounded))
-                .foregroundStyle(Theme.textPrimary(for: colorScheme))
+                .font(AppTypography.title)
+                .foregroundStyle(AppColors.textPrimary(for: colorScheme))
+
+            if let symbol = viewModel.habitIconSymbol {
+                HStack(spacing: 8) {
+                    Image(systemName: symbol)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(accentColor)
+
+                    Text(L10n.text("home.title"))
+                        .font(AppTypography.bodySmall)
+                        .foregroundStyle(AppColors.textSecondary(for: colorScheme))
+                }
+            }
         }
     }
 
-    // MARK: — Streak cards side-by-side
+    private var emptyState: some View {
+        AppSurface {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(L10n.text("stats.title"))
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .foregroundStyle(AppColors.textPrimary(for: colorScheme))
 
-    private func streakCards(preset: ThemePreset) -> some View {
-        HStack(spacing: 12) {
-            streakCard(
-                title: L10n.text("stats.current"),
-                value: viewModel.currentStreak,
-                isPrimary: true,
-                preset: preset
-            )
-            streakCard(
+                Text(L10n.text("home.no_habit"))
+                    .font(AppTypography.bodySmall)
+                    .foregroundStyle(AppColors.textSecondary(for: colorScheme))
+            }
+        }
+    }
+
+    private var metricsGrid: some View {
+        LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
+            primaryCurrentCard
+                .gridCellColumns(2)
+
+            secondaryMetricCard(
                 title: L10n.text("stats.best"),
-                value: viewModel.bestStreak,
-                isPrimary: false,
-                preset: preset
+                value: L10n.streakDays(viewModel.bestStreak),
+                accent: false
             )
+
+            secondaryMetricCard(
+                title: L10n.text("stats.last7"),
+                value: L10n.completionPercent(viewModel.completionRate7),
+                accent: false
+            )
+
+            secondaryMetricCard(
+                title: L10n.text("stats.last30"),
+                value: L10n.completionPercent(viewModel.completionRate30),
+                accent: true
+            )
+            .gridCellColumns(2)
         }
     }
 
-    private func streakCard(title: String, value: Int, isPrimary: Bool, preset: ThemePreset) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.system(size: 12, weight: .bold, design: .rounded))
-                .foregroundStyle(
-                    isPrimary
-                        ? Color(hex: preset.primaryHex).opacity(0.8)
-                        : Theme.textSecondary(for: colorScheme)
-                )
-                .textCase(.uppercase)
-                .kerning(0.5)
+    private var primaryCurrentCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(L10n.text("stats.current").uppercased())
+                .font(AppTypography.overline)
+                .foregroundStyle(accentColor.opacity(0.9))
+                .kerning(0.8)
 
-            Text("\(value)")
-                .font(.system(size: 52, weight: .heavy, design: .rounded))
-                .foregroundStyle(
-                    isPrimary
-                        ? Theme.textPrimary(for: colorScheme)
-                        : Theme.textSecondary(for: colorScheme)
-                )
-                .contentTransition(.numericText())
-                .animation(.spring(response: 0.4, dampingFraction: 0.7), value: value)
+            HStack(alignment: .lastTextBaseline, spacing: 8) {
+                Text("\(viewModel.currentStreak)")
+                    .font(.system(size: 72, weight: .heavy, design: .rounded))
+                    .foregroundStyle(AppColors.textPrimary(for: colorScheme))
+                    .contentTransition(.numericText())
+
+                Text(L10n.streakUnit(viewModel.currentStreak))
+                    .font(.system(size: 21, weight: .semibold, design: .rounded))
+                    .foregroundStyle(AppColors.textSecondary(for: colorScheme))
+                    .padding(.bottom, 10)
+            }
+
+            Text(L10n.streakInARowLabel(viewModel.currentStreak))
+                .font(AppTypography.bodySmall)
+                .foregroundStyle(AppColors.textSecondary(for: colorScheme))
         }
+        .padding(24)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(20)
         .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(
-                    isPrimary
-                        ? Color(hex: preset.primaryHex).opacity(colorScheme == .dark ? 0.22 : 0.13)
-                        : Color.white.opacity(colorScheme == .dark ? 0.1 : 0.5)
+                    LinearGradient(
+                        colors: [
+                            accentColor.opacity(colorScheme == .dark ? 0.28 : 0.22),
+                            Color.white.opacity(colorScheme == .dark ? 0.10 : 0.86)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
                 )
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(
-                    isPrimary
-                        ? Color(hex: preset.primaryHex).opacity(colorScheme == .dark ? 0.2 : 0.1)
-                        : Color.clear,
-                    lineWidth: 1
-                )
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(accentColor.opacity(colorScheme == .dark ? 0.18 : 0.14), lineWidth: 1)
         )
     }
 
-    // MARK: — Rates
+    private func secondaryMetricCard(title: String, value: String, accent: Bool) -> some View {
+        AppSurface {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title)
+                    .font(AppTypography.overline)
+                    .foregroundStyle(accent ? accentColor.opacity(0.88) : AppColors.textSecondary(for: colorScheme))
+                    .kerning(0.6)
 
-    private func ratesRow(preset: ThemePreset) -> some View {
-        HStack(spacing: 12) {
-            ratePill(
-                title: L10n.text("stats.last7"),
-                value: L10n.completionPercent(viewModel.completionRate7),
-                preset: preset
-            )
-            ratePill(
-                title: L10n.text("stats.last30"),
-                value: L10n.completionPercent(viewModel.completionRate30),
-                preset: preset
-            )
+                Text(value)
+                    .font(AppTypography.cardValue)
+                    .foregroundStyle(AppColors.textPrimary(for: colorScheme))
+            }
         }
     }
 
-    private func ratePill(title: String, value: String, preset: ThemePreset) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.system(size: 12, weight: .bold, design: .rounded))
-                .foregroundStyle(Theme.textSecondary(for: colorScheme))
-                .textCase(.uppercase)
-                .kerning(0.4)
+    private var monthSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            AppSectionTitle(title: viewModel.monthTitle.capitalized)
 
-            Text(value)
-                .font(.system(size: 24, weight: .bold, design: .rounded))
-                .foregroundStyle(Theme.textPrimary(for: colorScheme))
+            AppSurface {
+                VStack(alignment: .leading, spacing: 16) {
+                    MonthGrid(days: viewModel.monthDays, preset: preset, colorScheme: colorScheme)
+
+                    Button(action: openFullHistory) {
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(L10n.text("stats.full_history"))
+                                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(Theme.textPrimary(for: colorScheme))
+
+                                Text(L10n.text("stats.full_history.caption"))
+                                    .font(AppTypography.bodySmall)
+                                    .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                            }
+
+                            Spacer()
+
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(accentColor)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white.opacity(colorScheme == .dark ? 0.1 : 0.5))
-        )
     }
 
-    // MARK: — Month grid
+    private func openFullHistory() {
+        let gate = PremiumGate()
 
-    private func monthSection(preset: ThemePreset) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(viewModel.monthTitle)
-                .font(.system(size: 18, weight: .semibold, design: .rounded))
-                .foregroundStyle(Theme.textPrimary(for: colorScheme))
-
-            MonthGrid(days: viewModel.monthDays, preset: preset, colorScheme: colorScheme)
+        if gate.canAccess(.fullHistory) {
+            showComingSoonAlert = true
+        } else {
+            gateFeature = .fullHistory
         }
     }
 }
-
-// MARK: — Month grid component
 
 private struct MonthGrid: View {
     let days: [MonthGridDay]
@@ -171,7 +238,6 @@ private struct MonthGrid: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            // Weekday headers
             LazyVGrid(columns: columns, spacing: 6) {
                 ForEach(weekLetters, id: \.self) { letter in
                     Text(letter)
@@ -181,18 +247,12 @@ private struct MonthGrid: View {
                 }
             }
 
-            // Day cells
             LazyVGrid(columns: columns, spacing: 6) {
                 ForEach(days) { day in
                     dayCell(day)
                 }
             }
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color.white.opacity(colorScheme == .dark ? 0.07 : 0.45))
-        )
     }
 
     @ViewBuilder
@@ -218,7 +278,9 @@ private struct MonthGrid: View {
                     .fill(background)
                     .shadow(
                         color: day.isCompleted ? Color(hex: preset.primaryHex).opacity(0.35) : .clear,
-                        radius: 4, x: 0, y: 2
+                        radius: 4,
+                        x: 0,
+                        y: 2
                     )
             )
     }
