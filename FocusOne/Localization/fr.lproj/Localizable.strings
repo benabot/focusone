@@ -75,6 +75,9 @@
 "onboarding.add_reminder" = "Ajouter un rappel";
 "onboarding.start" = "Créer la routine";
 "onboarding.save" = "Enregistrer";
+"onboarding.upcoming.title" = "Ajouter la routine suivante";
+"onboarding.upcoming.subtitle" = "Prépare une routine à activer plus tard.";
+"onboarding.upcoming.start" = "Ajouter la routine";
 "onboarding.cancel" = "Annuler";
 "onboarding.error.name_required" = "Ajoute un nom pour continuer.";
 "onboarding.error.no_active_habit" = "Aucune routine active à modifier.";
@@ -87,6 +90,12 @@
 "stats.full_history" = "Historique complet";
 "stats.full_history.caption" = "Au-delà des 30 derniers jours";
 "stats.full_history.empty" = "Aucune journée à afficher pour l'instant.";
+"stats.full_history.routines" = "Routines";
+"stats.full_history.month" = "Mois";
+"stats.full_history.badge.active" = "Active";
+"stats.full_history.badge.archived" = "Archivée";
+"stats.full_history.period.active" = "Active depuis le %@";
+"stats.check_ins" = "Validations";
 "stats.percent.format" = "%d%%";
 
 "settings.title" = "Réglages";
@@ -129,17 +138,22 @@
 "premium.trial.ends_on" = "Jusqu’au %@";
 
 "settings.premium.card.title.trial" = "10 jours Premium offerts";
-"settings.premium.card.subtitle.trial" = "Historique complet au-delà de 30 jours, archives, routine suivante et widgets avancés pendant l'essai.";
+"settings.premium.card.subtitle.trial" = "Historique complet au-delà de 30 jours, archives, routines suivantes et widgets avancés pendant l'essai.";
 "settings.premium.card.title.free" = "Débloque la suite de ta progression";
-"settings.premium.card.subtitle.free" = "Historique complet au-delà de 30 jours, archives, routine suivante et widgets avancés. Toujours une seule routine active.";
+"settings.premium.card.subtitle.free" = "Historique complet au-delà de 30 jours, archives, routines suivantes et widgets avancés. Toujours une seule routine active.";
 "settings.premium.card.title.active" = "Premium activé";
-"settings.premium.card.subtitle.active" = "Historique complet au-delà de 30 jours, archives, routine suivante et widgets avancés.";
+"settings.premium.card.subtitle.active" = "Historique complet au-delà de 30 jours, archives, routines suivantes et widgets avancés.";
 "settings.premium.context.archives" = "Voir les archives";
-"settings.premium.context.next" = "Passer à la routine suivante";
+"settings.premium.context.next" = "Ajouter la routine suivante";
 "settings.archives.title" = "Archives";
-"settings.premium.next.confirm.title" = "Passer à la routine suivante";
-"settings.premium.next.confirm.message" = "La routine active sera archivée. Tu pourras ensuite configurer la suivante.";
-"settings.premium.next.confirm.action" = "Continuer";
+"settings.upcoming.title" = "Routines suivantes";
+"settings.upcoming.add" = "Ajouter la routine suivante";
+"settings.upcoming.empty.title" = "Aucune routine suivante";
+"settings.upcoming.empty.message" = "Ajoute une ou plusieurs routines à préparer d'avance, puis active celle que tu veux au bon moment.";
+"settings.upcoming.switch" = "Passer à cette routine";
+"settings.upcoming.switch.title" = "Passer à cette routine";
+"settings.upcoming.switch.message" = "La routine active sera archivée et \"%@\" deviendra la routine active.";
+"settings.upcoming.switch.action" = "Passer";
 "settings.archives.empty.title" = "Aucune routine archivée";
 "settings.archives.empty.message" = "Archive une routine pour la retrouver ici avec son historique.";
 "settings.archives.date_range" = "Du %@ au %@";
@@ -150,44 +164,44 @@
 
 "paywall.badge" = "PREMIUM";
 "paywall.title" = "Passe à FocusOne Premium";
-"paywall.subtitle" = "Débloque l'historique complet au-delà de 30 jours, les archives, la routine suivante et les widgets avancés.";
+"paywall.subtitle" = "Débloque l'historique complet au-delà de 30 jours, les archives, les routines suivantes et les widgets avancés.";
 "paywall.note" = "Toujours une seule routine active à la fois.";
 "paywall.cta" = "Être informé du lancement";
 "paywall.cta.upgrade" = "Débloquer Premium";
 "paywall.cta.waitlist" = "Être informé du lancement";
-"paywall.benefit.habits.title" = "Routine suivante";
-"paywall.benefit.habits.detail" = "Quand une routine est ancrée, archive-la et prépare la suivante.";
+"paywall.benefit.habits.title" = "Routines suivantes";
+"paywall.benefit.habits.detail" = "Prépare une ou plusieurs routines d'avance et active la bonne au bon moment.";
 "paywall.benefit.history.title" = "Historique complet";
 "paywall.benefit.history.detail" = "Retrouve tes journées au-delà des 30 derniers jours.";
 "paywall.benefit.widgets.title" = "Widgets avancés";
 "paywall.benefit.widgets.detail" = "Garde la routine active, son streak et l'état du jour visibles sur l'écran d'accueil.";
 "paywall.benefit.cycles.title" = "Archives et cycles";
-"paywall.benefit.cycles.detail" = "Conserve les routines terminées et enchaîne la suivante sans perdre le fil.";
+"paywall.benefit.cycles.detail" = "Conserve les routines terminées et passe à la suivante sans perdre le fil.";
 "paywall.secondary.later" = "Plus tard";
 "paywall.secondary.restore" = "Restaurer les achats";
 "paywall.alert.title" = "Premium arrive bientôt";
 "paywall.alert.message" = "Cette option n'est pas encore disponible dans l'app.";
 
 "premium.prompt.trial.title" = "Ton essai Premium est en cours";
-"premium.prompt.trial.body" = "Profite de l'historique complet au-delà de 30 jours, des archives, de la routine suivante et des widgets avancés jusqu’au %@.";
+"premium.prompt.trial.body" = "Profite de l'historique complet au-delà de 30 jours, des archives, des routines suivantes et des widgets avancés jusqu’au %@.";
 "premium.prompt.trial.secondary" = "Toujours une seule routine active à la fois.";
 "premium.prompt.trial.cta" = "Voir Premium";
 "premium.prompt.trial.dismiss" = "Plus tard";
 
 "premium.prompt.ending.title" = "Premium se termine demain";
 "premium.prompt.ending.body" = "Le mode gratuit continue avec ta routine active, la validation quotidienne et la progression de base.";
-"premium.prompt.ending.secondary" = "Premium garde l'historique complet au-delà de 30 jours, les archives, la routine suivante et les widgets avancés ouverts.";
+"premium.prompt.ending.secondary" = "Premium garde l'historique complet au-delà de 30 jours, les archives, les routines suivantes et les widgets avancés ouverts.";
 "premium.prompt.ending.cta" = "Garder Premium";
 "premium.prompt.ending.dismiss" = "Plus tard";
 
 "premium.prompt.expired.title" = "L'accès Premium est terminé";
 "premium.prompt.expired.body" = "Tu gardes ta routine active, la validation quotidienne et la progression de base.";
-"premium.prompt.expired.secondary" = "Débloque Premium pour retrouver l'historique complet au-delà de 30 jours, les archives, la routine suivante et les widgets avancés.";
+"premium.prompt.expired.secondary" = "Débloque Premium pour retrouver l'historique complet au-delà de 30 jours, les archives, les routines suivantes et les widgets avancés.";
 "premium.prompt.expired.cta" = "Débloquer Premium";
 "premium.prompt.expired.dismiss" = "Continuer en gratuit";
 
-"paywall.benefit.next.title" = "Routine suivante";
-"paywall.benefit.next.detail" = "Quand une routine est installée, archive-la et prépare la suivante.";
+"paywall.benefit.next.title" = "Routines suivantes";
+"paywall.benefit.next.detail" = "Ajoute plusieurs routines d'avance puis passe à celle qui compte maintenant.";
 "paywall.benefit.archives.title" = "Archives";
 "paywall.benefit.archives.detail" = "Conserve les routines terminées et leur progression.";
 
@@ -195,8 +209,8 @@
 "premium.gate.history.message" = "Les 30 derniers jours restent inclus. Débloque Premium pour retrouver le reste.";
 "premium.gate.archive.title" = "Archives";
 "premium.gate.archive.message" = "Archive cette routine et garde son historique avec Premium.";
-"premium.gate.next.title" = "Routine suivante";
-"premium.gate.next.message" = "Passe à la routine suivante sans perdre le fil de ta progression.";
+"premium.gate.next.title" = "Routines suivantes";
+"premium.gate.next.message" = "Ajoute plusieurs routines d'avance et passe à celle que tu choisis sans perdre le fil de ta progression.";
 "premium.gate.widgets.title" = "Widgets avancés";
 "premium.gate.widgets.message" = "Affiche la routine active, son streak et l'état du jour sur l'écran d'accueil.";
 "premium.gate.cta" = "Débloquer Premium";

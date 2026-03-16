@@ -9,8 +9,7 @@ struct SettingsView: View {
     @State private var showDayStartSheet = false
     @State private var showICloudSheet = false
     @State private var showArchivesSheet = false
-    @State private var showNextRoutineSetup = false
-    @State private var showNextRoutineConfirmation = false
+    @State private var showUpcomingRoutinesSheet = false
     @State private var gateFeature: PremiumFeature?
     @Environment(\.colorScheme) private var colorScheme
 
@@ -74,19 +73,16 @@ struct SettingsView: View {
         .sheet(isPresented: $showArchivesSheet) {
             SettingsArchivesSheet(items: viewModel.archivedRoutines)
         }
-        .fullScreenCover(isPresented: $showNextRoutineSetup, onDismiss: {
-            viewModel.load()
+        .sheet(isPresented: $showUpcomingRoutinesSheet, onDismiss: {
+            viewModel.loadUpcomingRoutines()
         }) {
-            OnboardingView(
+            SettingsUpcomingRoutinesSheet(
                 context: context,
-                mode: .create
-            ) {
-                showNextRoutineSetup = false
-                viewModel.load()
-            } onCancel: {
-                showNextRoutineSetup = false
-                viewModel.load()
-            }
+                viewModel: viewModel,
+                onActivateRoutine: { id in
+                    await viewModel.activateUpcomingRoutine(id: id)
+                }
+            )
         }
         .alert(item: $gateFeature) { feature in
             Alert(
@@ -97,14 +93,6 @@ struct SettingsView: View {
                 },
                 secondaryButton: .cancel(Text(L10n.text("premium.gate.dismiss")))
             )
-        }
-        .alert(L10n.text("settings.premium.next.confirm.title"), isPresented: $showNextRoutineConfirmation) {
-            Button(L10n.text("settings.premium.next.confirm.action")) {
-                beginNextRoutine()
-            }
-            Button(L10n.text("onboarding.cancel"), role: .cancel) {}
-        } message: {
-            Text(L10n.text("settings.premium.next.confirm.message"))
         }
     }
 
@@ -352,17 +340,10 @@ struct SettingsView: View {
             viewModel.loadArchivedRoutines()
             showArchivesSheet = true
         case .nextRoutine:
-            showNextRoutineConfirmation = true
+            viewModel.loadUpcomingRoutines()
+            showUpcomingRoutinesSheet = true
         case .fullHistory, .advancedWidgets:
             showPaywall = true
-        }
-    }
-
-    private func beginNextRoutine() {
-        Task {
-            if await viewModel.prepareNextRoutine() {
-                showNextRoutineSetup = true
-            }
         }
     }
 }
@@ -487,6 +468,215 @@ private struct SettingsArchivesSheet: View {
             }
 
             Spacer(minLength: 0)
+        }
+        .padding(Theme.spacingM)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: Theme.radiusLarge, style: .continuous)
+                .fill(Color.white.opacity(colorScheme == .dark ? 0.14 : 0.64))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.radiusLarge, style: .continuous)
+                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.8), lineWidth: 1)
+        )
+    }
+}
+
+private struct SettingsUpcomingRoutinesSheet: View {
+    let context: NSManagedObjectContext
+    @ObservedObject var viewModel: SettingsViewModel
+    let onActivateRoutine: (UUID) async -> Bool
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var pendingActivation: UpcomingRoutineSummary?
+    @State private var activatingRoutineID: UUID?
+    @State private var showUpcomingRoutineSetup = false
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    if viewModel.upcomingRoutines.isEmpty {
+                        emptyState
+                    } else {
+                        addButton
+
+                        ForEach(viewModel.upcomingRoutines) { item in
+                            upcomingCard(item)
+                        }
+                    }
+                }
+                .padding(Theme.padding)
+                .padding(.bottom, 24)
+            }
+            .background(Theme.backgroundGradient(for: Theme.presets[6], scheme: colorScheme).ignoresSafeArea())
+            .navigationTitle(L10n.text("settings.upcoming.title"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(L10n.text("common.close")) {
+                        dismiss()
+                    }
+                }
+
+                if !viewModel.upcomingRoutines.isEmpty {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(L10n.text("settings.upcoming.add")) {
+                            showUpcomingRoutineSetup = true
+                        }
+                    }
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $showUpcomingRoutineSetup, onDismiss: {
+            viewModel.loadUpcomingRoutines()
+        }) {
+            OnboardingView(
+                context: context,
+                mode: .upcoming
+            ) {
+                showUpcomingRoutineSetup = false
+                viewModel.loadUpcomingRoutines()
+            } onCancel: {
+                showUpcomingRoutineSetup = false
+                viewModel.loadUpcomingRoutines()
+            }
+        }
+        .alert(
+            L10n.text("settings.upcoming.switch.title"),
+            isPresented: Binding(
+                get: { pendingActivation != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        pendingActivation = nil
+                    }
+                }
+            ),
+            presenting: pendingActivation
+        ) { item in
+            Button(L10n.text("settings.upcoming.switch.action")) {
+                activatingRoutineID = item.id
+                Task {
+                    let didActivate = await onActivateRoutine(item.id)
+                    activatingRoutineID = nil
+
+                    if didActivate {
+                        pendingActivation = nil
+                        dismiss()
+                    }
+                }
+            }
+            Button(L10n.text("onboarding.cancel"), role: .cancel) {
+                pendingActivation = nil
+            }
+        } message: { item in
+            Text(
+                String.localizedStringWithFormat(
+                    L10n.text("settings.upcoming.switch.message"),
+                    item.name
+                )
+            )
+        }
+    }
+
+    private var emptyState: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(L10n.text("settings.upcoming.empty.title"))
+                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .foregroundStyle(Theme.textPrimary(for: colorScheme))
+
+            Text(L10n.text("settings.upcoming.empty.message"))
+                .font(.system(size: 15, weight: .medium, design: .rounded))
+                .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button(L10n.text("settings.upcoming.add")) {
+                showUpcomingRoutineSetup = true
+            }
+            .font(.system(size: 15, weight: .bold, design: .rounded))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+            .background(
+                Capsule()
+                    .fill(Theme.accent)
+            )
+            .buttonStyle(.plain)
+        }
+        .padding(Theme.spacingM)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: Theme.radiusLarge, style: .continuous)
+                .fill(Color.white.opacity(colorScheme == .dark ? 0.14 : 0.64))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.radiusLarge, style: .continuous)
+                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.8), lineWidth: 1)
+        )
+    }
+
+    private var addButton: some View {
+        Button(L10n.text("settings.upcoming.add")) {
+            showUpcomingRoutineSetup = true
+        }
+        .font(.system(size: 15, weight: .bold, design: .rounded))
+        .foregroundStyle(Theme.accent)
+        .buttonStyle(.plain)
+    }
+
+    private func upcomingCard(_ item: UpcomingRoutineSummary) -> some View {
+        VStack(alignment: .leading, spacing: Theme.spacingM) {
+            HStack(alignment: .top, spacing: Theme.spacingM) {
+                ZStack {
+                    Circle()
+                        .fill(Color(hex: item.colorHex).opacity(0.18))
+                        .frame(width: 44, height: 44)
+
+                    Image(systemName: item.iconSymbol)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(Color(hex: item.colorHex))
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(item.name)
+                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .foregroundStyle(Theme.textPrimary(for: colorScheme))
+
+                    Text(item.remindersText)
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundStyle(Theme.textSecondary(for: colorScheme))
+
+                    Text(item.dayStartText)
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color(hex: item.colorHex))
+                }
+
+                Spacer(minLength: 0)
+            }
+
+            Button {
+                pendingActivation = item
+            } label: {
+                HStack {
+                    if activatingRoutineID == item.id {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Text(L10n.text("settings.upcoming.switch"))
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                    }
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(Color(hex: item.colorHex))
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(activatingRoutineID != nil)
         }
         .padding(Theme.spacingM)
         .frame(maxWidth: .infinity, alignment: .leading)

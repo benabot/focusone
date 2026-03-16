@@ -1,5 +1,22 @@
 import Foundation
 
+enum HabitLifecycleState: String, Codable, Equatable {
+    case active
+    case upcoming
+    case archived
+
+    static func resolve(rawValue: String?, isActive: Bool) -> HabitLifecycleState {
+        if isActive {
+            return .active
+        }
+
+        guard let rawValue, let state = HabitLifecycleState(rawValue: rawValue) else {
+            return .archived
+        }
+        return state
+    }
+}
+
 struct Habit: Identifiable, Equatable {
     let id: UUID
     var name: String
@@ -8,7 +25,15 @@ struct Habit: Identifiable, Equatable {
     var startDate: Date
     var dayStartHour: Int
     var reminderTimes: [ReminderTime]
-    var isActive: Bool
+    var lifecycleState: HabitLifecycleState
+
+    var isActive: Bool {
+        lifecycleState == .active
+    }
+
+    var isUpcoming: Bool {
+        lifecycleState == .upcoming
+    }
 }
 
 enum HabitIcon {

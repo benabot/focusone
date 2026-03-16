@@ -16,6 +16,7 @@ extension HabitEntity {
     @NSManaged public var dayStartHour: Int16
     @NSManaged public var reminderTimes: String?
     @NSManaged public var isActive: Bool
+    @NSManaged public var lifecycleState: String?
 }
 
 extension HabitEntity {
@@ -28,7 +29,7 @@ extension HabitEntity {
             startDate: startDate,
             dayStartHour: Int(dayStartHour),
             reminderTimes: ReminderTimesCodec.decode(reminderTimes),
-            isActive: isActive
+            lifecycleState: HabitLifecycleState.resolve(rawValue: lifecycleState, isActive: isActive)
         )
     }
 }

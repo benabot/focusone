@@ -83,15 +83,36 @@ private struct OnboardingContent: View {
     }
 
     private var titleText: String {
-        mode == .edit ? L10n.text("onboarding.configuration") : L10n.text("onboarding.title")
+        switch mode {
+        case .create:
+            return L10n.text("onboarding.title")
+        case .edit:
+            return L10n.text("onboarding.configuration")
+        case .upcoming:
+            return L10n.text("onboarding.upcoming.title")
+        }
     }
 
     private var subtitleText: String {
-        mode == .edit ? L10n.text("onboarding.edit_subtitle") : L10n.text("onboarding.subtitle")
+        switch mode {
+        case .create:
+            return L10n.text("onboarding.subtitle")
+        case .edit:
+            return L10n.text("onboarding.edit_subtitle")
+        case .upcoming:
+            return L10n.text("onboarding.upcoming.subtitle")
+        }
     }
 
     private var primaryActionTitle: String {
-        mode == .edit ? L10n.text("onboarding.save") : L10n.text("onboarding.start")
+        switch mode {
+        case .create:
+            return L10n.text("onboarding.start")
+        case .edit:
+            return L10n.text("onboarding.save")
+        case .upcoming:
+            return L10n.text("onboarding.upcoming.start")
+        }
     }
 
     private var cancelActionTitle: String? {

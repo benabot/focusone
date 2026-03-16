@@ -4,6 +4,7 @@ import CoreData
 enum OnboardingMode {
     case create
     case edit
+    case upcoming
 }
 
 @MainActor
@@ -59,7 +60,9 @@ final class OnboardingViewModel: ObservableObject {
 
         switch mode {
         case .create:
-            return await createHabit(named: trimmedName)
+            return await createActiveHabit(named: trimmedName)
+        case .upcoming:
+            return await createUpcomingHabit(named: trimmedName)
         case .edit:
             return await updateHabit(named: trimmedName)
         }
@@ -93,7 +96,7 @@ final class OnboardingViewModel: ObservableObject {
         return UserDefaults.standard.bool(forKey: AppStorageKeys.notificationsEnabled)
     }
 
-    private func createHabit(named name: String) async -> Bool {
+    private func createActiveHabit(named name: String) async -> Bool {
         let repository = HabitRepository(context: context)
         let reminderModels = reminderTimes.map { ReminderTime.from(date: $0) }
         let created = repository.createHabit(
@@ -101,7 +104,8 @@ final class OnboardingViewModel: ObservableObject {
             iconSymbol: selectedIconSymbol,
             colorHex: selectedThemeHex,
             dayStartHour: dayStartHour,
-            reminderTimes: reminderModels
+            reminderTimes: reminderModels,
+            lifecycleState: .active
         )
 
         let habit = created.toDomain()
@@ -110,6 +114,22 @@ final class OnboardingViewModel: ObservableObject {
         UserDefaults.standard.set(notificationsEnabled, forKey: AppStorageKeys.notificationsEnabled)
         await syncNotifications(for: habit, shouldReschedule: true)
         saveWidgetSnapshot(for: habit, repository: repository)
+        return true
+    }
+
+    private func createUpcomingHabit(named name: String) async -> Bool {
+        let repository = HabitRepository(context: context)
+        let reminderModels = reminderTimes.map { ReminderTime.from(date: $0) }
+
+        _ = repository.createHabit(
+            name: name,
+            iconSymbol: selectedIconSymbol,
+            colorHex: selectedThemeHex,
+            dayStartHour: dayStartHour,
+            reminderTimes: reminderModels,
+            lifecycleState: .upcoming
+        )
+
         return true
     }
 

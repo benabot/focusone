@@ -49,8 +49,7 @@ struct StatsView: View {
         }
         .sheet(isPresented: $showFullHistory) {
             StatsFullHistorySheet(
-                months: viewModel.historyMonths,
-                preset: preset
+                routines: viewModel.historyRoutines
             )
         }
         .alert(item: $gateFeature) { feature in
@@ -190,7 +189,7 @@ struct StatsView: View {
 
             AppSurface {
                 VStack(alignment: .leading, spacing: 16) {
-                    MonthGrid(days: viewModel.monthDays, preset: preset, colorScheme: colorScheme)
+                    MonthGrid(days: viewModel.monthDays, accentHex: preset.primaryHex, colorScheme: colorScheme)
 
                     Button(action: openFullHistory) {
                         HStack(spacing: 12) {
@@ -231,7 +230,7 @@ struct StatsView: View {
 
 private struct MonthGrid: View {
     let days: [MonthGridDay]
-    let preset: ThemePreset
+    let accentHex: String
     let colorScheme: ColorScheme
 
     private let weekLetters = ["L", "M", "M", "J", "V", "S", "D"]
@@ -265,7 +264,7 @@ private struct MonthGrid: View {
         }()
 
         let background: Color = {
-            if day.isCompleted { return Color(hex: preset.primaryHex) }
+            if day.isCompleted { return Color(hex: accentHex) }
             if day.isCurrentMonth { return Color.white.opacity(colorScheme == .dark ? 0.07 : 0.35) }
             return .clear
         }()
@@ -278,7 +277,7 @@ private struct MonthGrid: View {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
                     .fill(background)
                     .shadow(
-                        color: day.isCompleted ? Color(hex: preset.primaryHex).opacity(0.35) : .clear,
+                        color: day.isCompleted ? Color(hex: accentHex).opacity(0.35) : .clear,
                         radius: 4,
                         x: 0,
                         y: 2
@@ -294,38 +293,53 @@ struct StatsView_Previews: PreviewProvider {
 }
 
 private struct StatsFullHistorySheet: View {
-    let months: [HistoryMonthSection]
-    let preset: ThemePreset
+    let routines: [RoutineHistorySection]
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @State private var selectedRoutineID: UUID?
+    @State private var selectedMonthIndex = 0
+
+    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+
+    private var selectedRoutine: RoutineHistorySection? {
+        routines.first(where: { $0.id == selectedRoutineID }) ?? routines.first
+    }
+
+    private var selectedMonth: HistoryMonthSection? {
+        guard let selectedRoutine, selectedRoutine.months.indices.contains(selectedMonthIndex) else {
+            return nil
+        }
+        return selectedRoutine.months[selectedMonthIndex]
+    }
+
+    private var selectedPreset: ThemePreset {
+        Theme.preset(for: selectedRoutine?.colorHex ?? Theme.defaultThemeHex)
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: AppSpacing.l) {
-                    if months.isEmpty {
-                        AppSurface {
-                            Text(L10n.text("stats.full_history.empty"))
-                                .font(AppTypography.bodySmall)
-                                .foregroundStyle(AppColors.textSecondary(for: colorScheme))
+                    if routines.isEmpty {
+                        emptyState
+                    } else if let selectedRoutine {
+                        if routines.count > 1 {
+                            routinePicker
                         }
-                    } else {
-                        ForEach(months) { month in
-                            VStack(alignment: .leading, spacing: 12) {
-                                AppSectionTitle(title: month.title)
 
-                                AppSurface {
-                                    MonthGrid(days: month.days, preset: preset, colorScheme: colorScheme)
-                                }
-                            }
+                        routineHeader(selectedRoutine)
+                        metricsGrid(for: selectedRoutine)
+
+                        if let selectedMonth {
+                            monthSection(routine: selectedRoutine, month: selectedMonth)
                         }
                     }
                 }
                 .padding(Theme.padding)
                 .padding(.bottom, 24)
             }
-            .background(Theme.backgroundGradient(for: preset, scheme: colorScheme).ignoresSafeArea())
+            .background(Theme.backgroundGradient(for: selectedPreset, scheme: colorScheme).ignoresSafeArea())
             .navigationTitle(L10n.text("stats.full_history"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -336,5 +350,242 @@ private struct StatsFullHistorySheet: View {
                 }
             }
         }
+        .onAppear(perform: syncSelection)
+        .onChange(of: routines.map(\.id)) { _ in
+            syncSelection()
+        }
+        .onChange(of: selectedRoutineID) { _ in
+            selectedMonthIndex = 0
+        }
+    }
+
+    private var emptyState: some View {
+        AppSurface {
+            Text(L10n.text("stats.full_history.empty"))
+                .font(AppTypography.bodySmall)
+                .foregroundStyle(AppColors.textSecondary(for: colorScheme))
+        }
+    }
+
+    private var routinePicker: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            AppSectionTitle(title: L10n.text("stats.full_history.routines"))
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(routines) { routine in
+                        let isSelected = routine.id == selectedRoutine?.id
+
+                        Button {
+                            selectedRoutineID = routine.id
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: routine.iconSymbol)
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(isSelected ? .white : Color(hex: routine.colorHex))
+
+                                Text(routine.name)
+                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(
+                                        isSelected ? Color.white : AppColors.textPrimary(for: colorScheme)
+                                    )
+                                    .lineLimit(1)
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 11)
+                            .background(
+                                Capsule()
+                                    .fill(
+                                        isSelected
+                                            ? Color(hex: routine.colorHex)
+                                            : Color.white.opacity(colorScheme == .dark ? 0.10 : 0.65)
+                                    )
+                            )
+                            .overlay(
+                                Capsule()
+                                    .stroke(
+                                        isSelected
+                                            ? Color.clear
+                                            : Color.white.opacity(colorScheme == .dark ? 0.08 : 0.82),
+                                        lineWidth: 1
+                                    )
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+
+    private func routineHeader(_ routine: RoutineHistorySection) -> some View {
+        AppSurface {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top, spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(Color(hex: routine.colorHex).opacity(0.18))
+                            .frame(width: 48, height: 48)
+
+                        Image(systemName: routine.iconSymbol)
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(Color(hex: routine.colorHex))
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(routine.name)
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .foregroundStyle(AppColors.textPrimary(for: colorScheme))
+
+                        Text(routine.periodText)
+                            .font(AppTypography.bodySmall)
+                            .foregroundStyle(AppColors.textSecondary(for: colorScheme))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    statusPill(isActive: routine.isActive, colorHex: routine.colorHex)
+                }
+
+                Text(routine.completionCountText)
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color(hex: routine.colorHex))
+            }
+        }
+    }
+
+    private func metricsGrid(for routine: RoutineHistorySection) -> some View {
+        LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
+            historyMetricCard(
+                title: L10n.text("stats.current"),
+                value: L10n.streakDays(routine.currentStreak),
+                colorHex: routine.colorHex
+            )
+
+            historyMetricCard(
+                title: L10n.text("stats.best"),
+                value: L10n.streakDays(routine.bestStreak),
+                colorHex: routine.colorHex
+            )
+
+            historyMetricCard(
+                title: L10n.text("stats.last7"),
+                value: L10n.completionPercent(routine.completionRate7),
+                colorHex: routine.colorHex
+            )
+
+            historyMetricCard(
+                title: L10n.text("stats.last30"),
+                value: L10n.completionPercent(routine.completionRate30),
+                colorHex: routine.colorHex
+            )
+
+            historyMetricCard(
+                title: L10n.text("stats.check_ins"),
+                value: routine.completionCountText,
+                colorHex: routine.colorHex,
+                compact: true
+            )
+            .gridCellColumns(2)
+        }
+    }
+
+    private func monthSection(routine: RoutineHistorySection, month: HistoryMonthSection) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            AppSectionTitle(title: L10n.text("stats.full_history.month"))
+
+            AppSurface {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack {
+                        Button {
+                            selectedMonthIndex += 1
+                        } label: {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(Color(hex: routine.colorHex))
+                                .frame(width: 34, height: 34)
+                                .background(
+                                    Circle()
+                                        .fill(Color(hex: routine.colorHex).opacity(0.14))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(selectedMonthIndex >= routine.months.count - 1)
+                        .opacity(selectedMonthIndex >= routine.months.count - 1 ? 0.35 : 1)
+
+                        Spacer(minLength: 0)
+
+                        Text(month.title)
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .foregroundStyle(AppColors.textPrimary(for: colorScheme))
+
+                        Spacer(minLength: 0)
+
+                        Button {
+                            selectedMonthIndex -= 1
+                        } label: {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(Color(hex: routine.colorHex))
+                                .frame(width: 34, height: 34)
+                                .background(
+                                    Circle()
+                                        .fill(Color(hex: routine.colorHex).opacity(0.14))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(selectedMonthIndex == 0)
+                        .opacity(selectedMonthIndex == 0 ? 0.35 : 1)
+                    }
+
+                    MonthGrid(days: month.days, accentHex: routine.colorHex, colorScheme: colorScheme)
+                }
+            }
+        }
+    }
+
+    private func historyMetricCard(title: String, value: String, colorHex: String, compact: Bool = false) -> some View {
+        AppSurface {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title)
+                    .font(AppTypography.overline)
+                    .foregroundStyle(Color(hex: colorHex).opacity(0.9))
+                    .kerning(0.6)
+
+                Text(value)
+                    .font(compact ? AppTypography.body : AppTypography.cardValue)
+                    .foregroundStyle(AppColors.textPrimary(for: colorScheme))
+                    .lineLimit(compact ? 1 : 2)
+                    .minimumScaleFactor(0.78)
+            }
+        }
+    }
+
+    private func statusPill(isActive: Bool, colorHex: String) -> some View {
+        Text(L10n.text(isActive ? "stats.full_history.badge.active" : "stats.full_history.badge.archived"))
+            .font(.system(size: 11, weight: .bold, design: .rounded))
+            .foregroundStyle(Color(hex: colorHex))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(
+                Capsule()
+                    .fill(Color(hex: colorHex).opacity(0.14))
+            )
+    }
+
+    private func syncSelection() {
+        guard !routines.isEmpty else {
+            selectedRoutineID = nil
+            selectedMonthIndex = 0
+            return
+        }
+
+        if let selectedRoutineID, routines.contains(where: { $0.id == selectedRoutineID }) {
+            return
+        }
+
+        self.selectedRoutineID = routines.first?.id
+        selectedMonthIndex = 0
     }
 }

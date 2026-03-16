@@ -10,6 +10,15 @@ struct ArchivedRoutineSummary: Identifiable {
     let detailsText: String
 }
 
+struct UpcomingRoutineSummary: Identifiable {
+    let id: UUID
+    let name: String
+    let iconSymbol: String
+    let colorHex: String
+    let remindersText: String
+    let dayStartText: String
+}
+
 @MainActor
 final class SettingsViewModel: ObservableObject {
     @Published var notificationsEnabled = true
@@ -18,6 +27,7 @@ final class SettingsViewModel: ObservableObject {
     @Published var selectedThemeHex = Theme.defaultThemeHex
     @Published var iCloudStatus = ""
     @Published private(set) var archivedRoutines: [ArchivedRoutineSummary] = []
+    @Published private(set) var upcomingRoutines: [UpcomingRoutineSummary] = []
     @Published private(set) var premiumAccessState: PremiumAccessState = PremiumGate().accessState()
 
     private let context: NSManagedObjectContext
@@ -38,9 +48,16 @@ final class SettingsViewModel: ObservableObject {
         refreshICloudStatus()
         refreshPremiumState()
         loadArchivedRoutines()
+        loadUpcomingRoutines()
 
         let repository = HabitRepository(context: context)
-        guard let active = repository.fetchActiveHabit() else { return }
+        guard let active = repository.fetchActiveHabit() else {
+            activeHabitEntity = nil
+            reminderTimes = []
+            dayStartHour = 4
+            selectedThemeHex = Theme.defaultThemeHex
+            return
+        }
 
         activeHabitEntity = active
         dayStartHour = Int(active.dayStartHour)
@@ -231,17 +248,59 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
-    func prepareNextRoutine() async -> Bool {
+    func loadUpcomingRoutines() {
         let repository = HabitRepository(context: context)
-        _ = repository.archiveActiveHabit()
+        upcomingRoutines = repository.fetchUpcomingHabits().map { entity in
+            let habit = entity.toDomain()
 
-        await notificationsService.clearReminders()
-        AppGroupStorage.shared.clearWidgetSnapshot()
+            return UpcomingRoutineSummary(
+                id: habit.id,
+                name: habit.name,
+                iconSymbol: habit.iconSymbol,
+                colorHex: habit.colorHex,
+                remindersText: String.localizedStringWithFormat(
+                    L10n.text("onboarding.reminders.row"),
+                    reminderSummary(for: habit.reminderTimes)
+                ),
+                dayStartText: String.localizedStringWithFormat(
+                    L10n.text("onboarding.day_start.row"),
+                    L10n.dayHourLabel(habit.dayStartHour)
+                )
+            )
+        }
+    }
 
-        activeHabitEntity = nil
-        reminderTimes = []
-        loadArchivedRoutines()
-        refreshPremiumState()
+    func activateUpcomingRoutine(id: UUID) async -> Bool {
+        let repository = HabitRepository(context: context)
+        guard let activated = repository.activateUpcomingHabit(id: id) else {
+            return false
+        }
+
+        let habit = activated.toDomain()
+        activeHabitEntity = activated
+
+        if notificationsEnabled {
+            _ = await notificationsService.requestPermission()
+            await notificationsService.scheduleDailyReminders(for: habit)
+        } else {
+            await notificationsService.clearReminders()
+        }
+
+        let completions = repository.fetchCompletions(habitId: habit.id)
+        let doneToday = streakEngine.doneToday(habit: habit, completions: completions)
+        let streak = streakEngine.currentStreak(habit: habit, completions: completions)
+
+        AppGroupStorage.shared.saveWidgetSnapshot(
+            WidgetDataSnapshot(
+                habitName: habit.name,
+                iconSymbol: habit.iconSymbol,
+                currentStreak: streak,
+                doneToday: doneToday,
+                themeHex: habit.colorHex
+            )
+        )
+
+        load()
         return true
     }
 
@@ -282,6 +341,18 @@ final class SettingsViewModel: ObservableObject {
         default:
             let format = L10n.text("settings.archives.completions.other")
             return String.localizedStringWithFormat(format, count)
+        }
+    }
+
+    private func reminderSummary(for reminderTimes: [ReminderTime]) -> String {
+        switch reminderTimes.count {
+        case 0:
+            return L10n.text("onboarding.reminders.summary.none")
+        case 1:
+            return L10n.text("onboarding.reminders.summary.one")
+        default:
+            let format = L10n.text("onboarding.reminders.summary.many")
+            return String.localizedStringWithFormat(format, reminderTimes.count)
         }
     }
 }
