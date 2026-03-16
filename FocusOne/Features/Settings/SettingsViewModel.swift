@@ -24,6 +24,8 @@ final class SettingsViewModel: ObservableObject {
     }
 
     func load() {
+        refreshICloudStatus()
+
         let repository = HabitRepository(context: context)
         guard let active = repository.fetchActiveHabit() else { return }
 
@@ -88,5 +90,46 @@ final class SettingsViewModel: ObservableObject {
                 themeHex: habit.colorHex
             )
         )
+    }
+
+    var notificationsStatusText: String {
+        notificationsEnabled
+            ? L10n.text("settings.status.enabled")
+            : L10n.text("settings.status.disabled")
+    }
+
+    var remindersSummaryText: String {
+        guard notificationsEnabled, !reminderTimes.isEmpty else {
+            return L10n.text("settings.status.none")
+        }
+
+        return reminderTimes
+            .sorted()
+            .map(formattedTime(for:))
+            .joined(separator: ", ")
+    }
+
+    var dayStartLabelText: String {
+        L10n.dayHourLabel(dayStartHour)
+    }
+
+    var selectedThemeName: String {
+        let preset = Theme.preset(for: selectedThemeHex)
+        return L10n.text(preset.nameKey)
+    }
+
+    private func refreshICloudStatus() {
+        if FileManager.default.ubiquityIdentityToken != nil {
+            iCloudStatus = L10n.text("settings.status.icloud.active")
+        } else {
+            iCloudStatus = L10n.text("settings.status.icloud.not_configured")
+        }
+    }
+
+    private func formattedTime(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.locale = .current
+        return formatter.string(from: date)
     }
 }

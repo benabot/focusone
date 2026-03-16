@@ -404,6 +404,7 @@ private struct BottomCTAContainer: View {
     let isLoading: Bool
     let primaryAction: () -> Void
     let secondaryAction: () -> Void
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(spacing: 8) {
@@ -422,17 +423,20 @@ private struct BottomCTAContainer: View {
             Button(action: primaryAction) {
                 Text(primaryTitle)
                     .font(.system(size: 19, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(primaryTextColor)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
                     .background(
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(Color(hex: tintHex))
+                            .fill(primaryBackgroundColor)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(primaryBorderColor, lineWidth: 1)
                     )
             }
             .buttonStyle(.plain)
             .disabled(!isEnabled)
-            .opacity(isEnabled ? 1 : 0.45)
         }
         .padding(.horizontal, 20)
         .padding(.top, 12)
@@ -442,6 +446,18 @@ private struct BottomCTAContainer: View {
                 .opacity(0.94)
                 .ignoresSafeArea(edges: .bottom)
         )
+    }
+
+    private var primaryTextColor: Color {
+        isEnabled ? .white : Theme.textSecondary(for: colorScheme)
+    }
+
+    private var primaryBackgroundColor: Color {
+        isEnabled ? Color(hex: tintHex) : Color.white.opacity(colorScheme == .dark ? 0.14 : 0.82)
+    }
+
+    private var primaryBorderColor: Color {
+        isEnabled ? Color.clear : Color(hex: tintHex).opacity(0.16)
     }
 }
 

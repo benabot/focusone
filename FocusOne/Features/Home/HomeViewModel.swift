@@ -55,7 +55,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     var todayStatusText: String {
-        doneToday ? L10n.text("home.today.done") : L10n.text("home.today.not_done")
+        doneToday ? L10n.text("home.support.done") : L10n.text("home.support.pending")
     }
 
     var todayStatusShort: String {
@@ -81,14 +81,19 @@ final class HomeViewModel: ObservableObject {
 
         let todayCandidates = sorted.compactMap { $0.toDate(on: now, calendar: calendar) }
         if let nextToday = todayCandidates.first(where: { $0 > now }) {
-            return timeString(for: nextToday)
+            return reminderText(for: nextToday)
         }
 
         guard let firstTomorrowDate = sorted.first?.toDate(on: now, calendar: calendar),
               let tomorrow = calendar.date(byAdding: .day, value: 1, to: firstTomorrowDate) else {
             return L10n.text("home.next_reminder.none")
         }
-        return timeString(for: tomorrow)
+        return reminderText(for: tomorrow)
+    }
+
+    private func reminderText(for date: Date) -> String {
+        let format = L10n.text("home.next_reminder.prefix")
+        return String.localizedStringWithFormat(format, timeString(for: date))
     }
 
     private func timeString(for date: Date) -> String {

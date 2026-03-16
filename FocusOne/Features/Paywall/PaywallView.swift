@@ -3,34 +3,45 @@ import SwiftUI
 struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @State private var showLaunchAlert = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.spacingL) {
-                    Text(L10n.text("paywall.title"))
-                        .font(.system(size: 34, weight: .bold, design: .rounded))
-                        .foregroundStyle(Theme.textPrimary(for: colorScheme))
+                    header
+                    noteCard
 
-                    Text(L10n.text("paywall.subtitle"))
-                        .foregroundStyle(Theme.textSecondary(for: colorScheme))
-
-                    Card {
-                        VStack(alignment: .leading, spacing: Theme.spacingS) {
-                            benefitRow("paywall.benefit.1")
-                            benefitRow("paywall.benefit.2")
-                            benefitRow("paywall.benefit.3")
-                            benefitRow("paywall.benefit.4")
-                        }
+                    VStack(spacing: Theme.spacingS) {
+                        benefitRow(
+                            symbol: "square.stack.3d.up.fill",
+                            title: L10n.text("paywall.benefit.habits.title"),
+                            detail: L10n.text("paywall.benefit.habits.detail")
+                        )
+                        benefitRow(
+                            symbol: "clock.arrow.circlepath",
+                            title: L10n.text("paywall.benefit.history.title"),
+                            detail: L10n.text("paywall.benefit.history.detail")
+                        )
+                        benefitRow(
+                            symbol: "rectangle.grid.2x2.fill",
+                            title: L10n.text("paywall.benefit.widgets.title"),
+                            detail: L10n.text("paywall.benefit.widgets.detail")
+                        )
+                        benefitRow(
+                            symbol: "arrow.triangle.branch",
+                            title: L10n.text("paywall.benefit.cycles.title"),
+                            detail: L10n.text("paywall.benefit.cycles.detail")
+                        )
                     }
-
-                    PrimaryButton(title: L10n.text("paywall.cta"), tintHex: Theme.presets[4].primaryHex) {}
-                        .disabled(true)
-                        .opacity(0.7)
                 }
                 .padding(Theme.spacingL)
+                .padding(.bottom, 120)
             }
             .background(Theme.backgroundGradient(for: Theme.presets[4], scheme: colorScheme).ignoresSafeArea())
+            .safeAreaInset(edge: .bottom) {
+                footer
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(L10n.text("common.close")) {
@@ -38,13 +49,110 @@ struct PaywallView: View {
                     }
                 }
             }
+            .alert(L10n.text("paywall.alert.title"), isPresented: $showLaunchAlert) {
+                Button(L10n.text("common.close"), role: .cancel) {}
+            } message: {
+                Text(L10n.text("paywall.alert.message"))
+            }
         }
     }
 
-    private func benefitRow(_ key: String) -> some View {
-        Label(L10n.text(key), systemImage: "sparkles")
-            .font(.subheadline.weight(.medium))
-            .foregroundStyle(Theme.textPrimary(for: colorScheme))
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(L10n.text("paywall.badge"))
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(Color(hex: Theme.presets[4].primaryHex))
+                .kerning(0.8)
+
+            Text(L10n.text("paywall.title"))
+                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .foregroundStyle(Theme.textPrimary(for: colorScheme))
+
+            Text(L10n.text("paywall.subtitle"))
+                .font(.system(size: 17, weight: .medium, design: .rounded))
+                .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var noteCard: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(L10n.text("paywall.note"))
+                .font(.system(size: 15, weight: .medium, design: .rounded))
+                .foregroundStyle(Theme.textSecondary(for: colorScheme))
+        }
+        .padding(Theme.spacingM)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: Theme.radiusMedium, style: .continuous)
+                .fill(Color.white.opacity(colorScheme == .dark ? 0.12 : 0.62))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.radiusMedium, style: .continuous)
+                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.8), lineWidth: 1)
+        )
+    }
+
+    private func benefitRow(symbol: String, title: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: Theme.spacingM) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color(hex: Theme.presets[4].primaryHex).opacity(0.16))
+                    .frame(width: 42, height: 42)
+
+                Image(systemName: symbol)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Color(hex: Theme.presets[4].primaryHex))
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundStyle(Theme.textPrimary(for: colorScheme))
+
+                Text(detail)
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(Theme.spacingM)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: Theme.radiusMedium, style: .continuous)
+                .fill(Color.white.opacity(colorScheme == .dark ? 0.12 : 0.62))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.radiusMedium, style: .continuous)
+                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.8), lineWidth: 1)
+        )
+    }
+
+    private var footer: some View {
+        VStack(spacing: Theme.spacingXS) {
+            PrimaryButton(title: L10n.text("paywall.cta"), tintHex: Theme.presets[4].primaryHex) {
+                showLaunchAlert = true
+            }
+
+            Button(L10n.text("paywall.secondary.later")) {
+                dismiss()
+            }
+            .font(.system(size: 15, weight: .semibold, design: .rounded))
+            .foregroundStyle(Theme.textSecondary(for: colorScheme))
+            .buttonStyle(.plain)
+
+            Button(L10n.text("paywall.secondary.restore")) {}
+                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .foregroundStyle(Color(hex: Theme.presets[4].primaryHex))
+                .buttonStyle(.plain)
+        }
+        .padding(.horizontal, Theme.padding)
+        .padding(.top, Theme.spacingS)
+        .padding(.bottom, Theme.spacingS)
+        .background(
+            Theme.backgroundTint.opacity(colorScheme == .dark ? 0.15 : 0.94)
+                .ignoresSafeArea(edges: .bottom)
+        )
     }
 }
 

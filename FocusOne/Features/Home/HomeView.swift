@@ -20,14 +20,10 @@ struct HomeView: View {
                 .ignoresSafeArea()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 18) {
                     if let habit = viewModel.habit {
                         topBar(habit: habit, preset: preset)
-                        streakCard(preset: preset)
-                        metaRow
-                        reminderChip
-                        Spacer(minLength: 4)
-                        doneButton(preset: preset)
+                        heroCard(habit: habit, preset: preset)
                     } else {
                         emptyState
                     }
@@ -99,143 +95,22 @@ struct HomeView: View {
         }
     }
 
-    // MARK: — Streak card
-
-    private func streakCard(preset: ThemePreset) -> some View {
-        ZStack(alignment: .bottomLeading) {
-            // Background
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: colorScheme == .dark
-                            ? [Color(hex: preset.primaryHex).opacity(0.28), Color(hex: preset.primaryHex).opacity(0.12)]
-                            : [Color(hex: preset.primaryHex).opacity(0.18), Color(hex: preset.softHex).opacity(0.6)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 28, style: .continuous)
-                        .stroke(Color(hex: preset.primaryHex).opacity(colorScheme == .dark ? 0.2 : 0.12), lineWidth: 1)
-                )
-
-            // Decorative blobs
-            Circle()
-                .fill(Color(hex: preset.primaryHex).opacity(0.12))
-                .frame(width: 120, height: 120)
-                .offset(x: -30, y: 40)
-                .blur(radius: 20)
-                .allowsHitTesting(false)
-
-            Circle()
-                .fill(Color(hex: preset.primaryHex).opacity(0.08))
-                .frame(width: 90, height: 90)
-                .offset(x: 260, y: -30)
-                .blur(radius: 16)
-                .allowsHitTesting(false)
-
-            // Content
-            VStack(alignment: .leading, spacing: 4) {
-                Text(L10n.text("home.streak.label").uppercased())
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .foregroundStyle(Color(hex: preset.primaryHex).opacity(0.8))
-                    .kerning(0.8)
-
-                HStack(alignment: .lastTextBaseline, spacing: 6) {
-                    Text("\(viewModel.currentStreak)")
-                        .font(.system(size: 80, weight: .heavy, design: .rounded))
-                        .foregroundStyle(Theme.textPrimary(for: colorScheme))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                        .contentTransition(.numericText())
-                        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: viewModel.currentStreak)
-
-                    Text(L10n.streakUnit(viewModel.currentStreak))
-                        .font(.system(size: 22, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Theme.textSecondary(for: colorScheme))
-                        .padding(.bottom, 10)
-                }
-
-                if viewModel.currentStreak > 0 {
-                    Text(L10n.text("home.streak.keep_going"))
-                        .font(.system(size: 14, weight: .medium, design: .rounded))
-                        .foregroundStyle(Theme.textSecondary(for: colorScheme))
-                }
-            }
-            .padding(24)
-        }
-        .frame(maxWidth: .infinity, minHeight: 170, alignment: .bottomLeading)
-        .clipped()
-    }
-
-    // MARK: — Meta row (today + best)
-
-    private var metaRow: some View {
-        HStack(spacing: 12) {
-            metaPill(
-                icon: "calendar",
-                label: L10n.text("home.today.label"),
-                value: viewModel.todayStatusShort
-            )
-            metaPill(
-                icon: "trophy.fill",
-                label: L10n.text("home.best.short"),
-                value: "\(viewModel.bestStreak)"
-            )
-        }
-    }
-
-    private func metaPill(icon: String, label: String, value: String) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Theme.textSecondary(for: colorScheme))
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(label)
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    .foregroundStyle(Theme.textSecondary(for: colorScheme))
-                    .textCase(.uppercase)
-                    .kerning(0.3)
-                Text(value)
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
-                    .foregroundStyle(Theme.textPrimary(for: colorScheme))
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white.opacity(colorScheme == .dark ? 0.1 : 0.5))
-        )
-    }
-
-    // MARK: — Reminder chip
-
-    private var reminderChip: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "bell.fill")
-                .font(.system(size: 11, weight: .semibold))
-            Text(viewModel.nextReminderText)
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-        }
-        .foregroundStyle(Theme.textSecondary(for: colorScheme))
-        .padding(.horizontal, 12)
-        .padding(.vertical, 7)
-        .background(
-            Capsule()
-                .fill(Color.white.opacity(colorScheme == .dark ? 0.1 : 0.45))
-        )
-    }
-
-    // MARK: — Done button
-
-    private func doneButton(preset: ThemePreset) -> some View {
-        DoneToggleButton(isDone: viewModel.doneToday, tintHex: preset.primaryHex) {
+    private func heroCard(habit: Habit, preset: ThemePreset) -> some View {
+        HomeHeroCard(
+            accentHex: preset.primaryHex,
+            streakCount: viewModel.currentStreak,
+            streakUnit: L10n.streakUnit(viewModel.currentStreak),
+            supportText: viewModel.todayStatusText,
+            todayValue: viewModel.todayStatusShort,
+            bestValue: viewModel.bestStreakText,
+            reminderText: viewModel.nextReminderText,
+            primaryTitle: viewModel.doneToday
+                ? L10n.text("home.done.button.on")
+                : L10n.text("home.done.button.off"),
+            isDoneToday: viewModel.doneToday
+        ) {
             viewModel.toggleDoneToday()
         }
-        .animation(.spring(response: 0.28, dampingFraction: 0.72), value: viewModel.doneToday)
     }
 
     // MARK: — Empty state
@@ -258,5 +133,171 @@ struct HomeView: View {
 struct HomeView_Previews: PreviewProvider {
     static var previews: some View {
         HomeView(context: PreviewSupport.context)
+    }
+}
+
+private struct HomeHeroCard: View {
+    let accentHex: String
+    let streakCount: Int
+    let streakUnit: String
+    let supportText: String
+    let todayValue: String
+    let bestValue: String
+    let reminderText: String
+    let primaryTitle: String
+    let isDoneToday: Bool
+    let action: () -> Void
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            streakHeader
+            supportLine
+            metricsRow
+            reminderRow
+            primaryButton
+        }
+        .padding(24)
+        .background(backgroundCard)
+        .overlay(cardOutline)
+        .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+    }
+
+    private var streakHeader: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(L10n.text("home.streak.label").uppercased())
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(Color(hex: accentHex).opacity(0.84))
+                .kerning(0.8)
+
+            HStack(alignment: .lastTextBaseline, spacing: 8) {
+                Text("\(streakCount)")
+                    .font(.system(size: 82, weight: .heavy, design: .rounded))
+                    .foregroundStyle(Theme.textPrimary(for: colorScheme))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .contentTransition(.numericText())
+
+                Text(streakUnit)
+                    .font(.system(size: 21, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                    .padding(.bottom, 12)
+            }
+        }
+    }
+
+    private var supportLine: some View {
+        Text(supportText)
+            .font(.system(size: 15, weight: .medium, design: .rounded))
+            .foregroundStyle(Theme.textSecondary(for: colorScheme))
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var metricsRow: some View {
+        HStack(spacing: 12) {
+            metricCard(
+                title: L10n.text("home.today.label"),
+                value: todayValue,
+                valueColor: isDoneToday ? Color(hex: "48A16C") : Theme.textPrimary(for: colorScheme)
+            )
+
+            metricCard(
+                title: L10n.text("home.best_streak"),
+                value: bestValue,
+                valueColor: Theme.textPrimary(for: colorScheme)
+            )
+        }
+    }
+
+    private func metricCard(title: String, value: String, valueColor: Color) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                .textCase(.uppercase)
+                .kerning(0.5)
+
+            Text(value)
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .foregroundStyle(valueColor)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.white.opacity(colorScheme == .dark ? 0.12 : 0.62))
+        )
+    }
+
+    private var reminderRow: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "bell.fill")
+                .font(.system(size: 12, weight: .semibold))
+            Text(reminderText)
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .lineLimit(1)
+        }
+        .foregroundStyle(Theme.textSecondary(for: colorScheme))
+    }
+
+    private var primaryButton: some View {
+        Button(action: action) {
+            Text(primaryTitle)
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .foregroundStyle(isDoneToday ? Theme.textSecondary(for: colorScheme) : .white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 17)
+                .background(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(
+                            isDoneToday
+                                ? Color.white.opacity(colorScheme == .dark ? 0.12 : 0.75)
+                                : Color(hex: accentHex)
+                        )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(
+                            isDoneToday ? Color(hex: accentHex).opacity(0.16) : Color.clear,
+                            lineWidth: 1
+                        )
+                )
+        }
+        .buttonStyle(.plain)
+        .disabled(isDoneToday)
+    }
+
+    private var backgroundCard: some View {
+        RoundedRectangle(cornerRadius: 30, style: .continuous)
+            .fill(
+                LinearGradient(
+                    colors: colorScheme == .dark
+                        ? [Color(hex: accentHex).opacity(0.28), Color(hex: accentHex).opacity(0.12)]
+                        : [Color(hex: accentHex).opacity(0.22), Color.white.opacity(0.72)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .overlay(alignment: .topTrailing) {
+                Circle()
+                    .fill(Color(hex: accentHex).opacity(0.10))
+                    .frame(width: 116, height: 116)
+                    .blur(radius: 12)
+                    .offset(x: 24, y: -18)
+            }
+            .overlay(alignment: .bottomLeading) {
+                Circle()
+                    .fill(Color(hex: accentHex).opacity(0.08))
+                    .frame(width: 148, height: 148)
+                    .blur(radius: 18)
+                    .offset(x: -36, y: 52)
+            }
+    }
+
+    private var cardOutline: some View {
+        RoundedRectangle(cornerRadius: 30, style: .continuous)
+            .stroke(Color(hex: accentHex).opacity(colorScheme == .dark ? 0.2 : 0.14), lineWidth: 1)
     }
 }
