@@ -1,6 +1,15 @@
 import Foundation
 import CoreData
 
+struct ArchivedRoutineSummary: Identifiable {
+    let id: UUID
+    let name: String
+    let iconSymbol: String
+    let colorHex: String
+    let periodText: String
+    let detailsText: String
+}
+
 @MainActor
 final class SettingsViewModel: ObservableObject {
     @Published var notificationsEnabled = true
@@ -8,6 +17,7 @@ final class SettingsViewModel: ObservableObject {
     @Published var dayStartHour = 4
     @Published var selectedThemeHex = Theme.defaultThemeHex
     @Published var iCloudStatus = ""
+    @Published private(set) var archivedRoutines: [ArchivedRoutineSummary] = []
     @Published private(set) var premiumAccessState: PremiumAccessState = PremiumGate().accessState()
 
     private let context: NSManagedObjectContext
@@ -27,6 +37,7 @@ final class SettingsViewModel: ObservableObject {
     func load() {
         refreshICloudStatus()
         refreshPremiumState()
+        loadArchivedRoutines()
 
         let repository = HabitRepository(context: context)
         guard let active = repository.fetchActiveHabit() else { return }
@@ -189,6 +200,51 @@ final class SettingsViewModel: ObservableObject {
         premiumAccessState = PremiumGate().accessState()
     }
 
+    func loadArchivedRoutines() {
+        let repository = HabitRepository(context: context)
+        archivedRoutines = repository.fetchArchivedHabits().map { entity in
+            let habit = entity.toDomain()
+            let completions = repository.fetchCompletions(habitId: habit.id)
+            let bestStreak = streakEngine.bestStreak(habit: habit, completions: completions)
+            let endDate = repository.latestCycleEndDate(habitId: habit.id)
+                ?? completions.map(\.timestamp).max()
+                ?? habit.startDate
+
+            let rangeFormat = L10n.text("settings.archives.date_range")
+            let periodText = String.localizedStringWithFormat(
+                rangeFormat,
+                formattedDate(habit.startDate),
+                formattedDate(endDate)
+            )
+
+            let recordFormat = L10n.text("settings.archives.record")
+            let recordText = String.localizedStringWithFormat(recordFormat, L10n.streakDays(bestStreak))
+
+            return ArchivedRoutineSummary(
+                id: habit.id,
+                name: habit.name,
+                iconSymbol: habit.iconSymbol,
+                colorHex: habit.colorHex,
+                periodText: periodText,
+                detailsText: "\(recordText) • \(completionCountText(completions.count))"
+            )
+        }
+    }
+
+    func prepareNextRoutine() async -> Bool {
+        let repository = HabitRepository(context: context)
+        _ = repository.archiveActiveHabit()
+
+        await notificationsService.clearReminders()
+        AppGroupStorage.shared.clearWidgetSnapshot()
+
+        activeHabitEntity = nil
+        reminderTimes = []
+        loadArchivedRoutines()
+        refreshPremiumState()
+        return true
+    }
+
     private func refreshICloudStatus() {
         #if targetEnvironment(simulator)
         iCloudStatus = L10n.text("settings.status.icloud.unavailable")
@@ -207,5 +263,25 @@ final class SettingsViewModel: ObservableObject {
         formatter.timeStyle = .short
         formatter.locale = .current
         return formatter.string(from: date)
+    }
+
+    private func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        formatter.locale = .current
+        return formatter.string(from: date)
+    }
+
+    private func completionCountText(_ count: Int) -> String {
+        switch count {
+        case 0:
+            return L10n.text("settings.archives.completions.none")
+        case 1:
+            return L10n.text("settings.archives.completions.one")
+        default:
+            let format = L10n.text("settings.archives.completions.other")
+            return String.localizedStringWithFormat(format, count)
+        }
     }
 }

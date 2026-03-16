@@ -31,6 +31,13 @@ final class HabitRepository {
         return (try? context.count(for: request)) ?? 0
     }
 
+    func fetchArchivedHabits() -> [HabitEntity] {
+        let request = HabitEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "isActive == NO")
+        request.sortDescriptors = [NSSortDescriptor(key: "startDate", ascending: false)]
+        return (try? context.fetch(request)) ?? []
+    }
+
     @discardableResult
     func createHabit(name: String,
                      iconSymbol: String,
@@ -110,6 +117,31 @@ final class HabitRepository {
         request.predicate = NSPredicate(format: "habitId == %@ AND dayKey == %@", habitId as CVarArg, dayKey as CVarArg)
         request.fetchLimit = 1
         return (try? context.fetch(request))?.first
+    }
+
+    @discardableResult
+    func archiveActiveHabit(now: Date = Date(), status: String = "archived") -> HabitEntity? {
+        guard let activeHabit = fetchActiveHabit() else { return nil }
+
+        activeHabit.isActive = false
+
+        let cycle = CycleEntity(context: context)
+        cycle.id = UUID()
+        cycle.habitId = activeHabit.id
+        cycle.cycleStart = activeHabit.startDate
+        cycle.cycleEnd = now
+        cycle.status = status
+
+        PersistenceController.shared.save(context: context)
+        return activeHabit
+    }
+
+    func latestCycleEndDate(habitId: UUID) -> Date? {
+        let request = CycleEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "habitId == %@", habitId as CVarArg)
+        request.sortDescriptors = [NSSortDescriptor(key: "cycleEnd", ascending: false)]
+        request.fetchLimit = 1
+        return (try? context.fetch(request))?.first?.cycleEnd
     }
 
     private func deactivateAllHabits() {

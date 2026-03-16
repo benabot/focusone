@@ -109,6 +109,14 @@ final class AppGroupStorage {
         guard let data = defaults.data(forKey: key) else { return nil }
         return try? JSONDecoder().decode(WidgetDataSnapshot.self, from: data)
     }
+
+    func clearWidgetSnapshot() {
+        defaults.removeObject(forKey: key)
+
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadAllTimelines()
+        #endif
+    }
 }
 
 // Backward-compatibility names used by earlier code.
@@ -125,5 +133,9 @@ final class WidgetDataStore {
 
     func load() -> WidgetDataSnapshot? {
         AppGroupStorage.shared.loadWidgetSnapshot()
+    }
+
+    func clear() {
+        AppGroupStorage.shared.clearWidgetSnapshot()
     }
 }

@@ -13,10 +13,12 @@
 		1A47BCD437EAD85CB174C0C0 /* Card.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8250AB1AA1199BD67309BFB /* Card.swift */; };
 		1D33D379CEA7445CD669866A /* Cycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC385D30CAC469C6AE8C16AB /* Cycle.swift */; };
 		210AA046FB3A6EB041498EA9 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 162C6B3AAF08DF4CE0BBF0FF /* Localizable.strings */; };
-		29B756B4955D9CA0B944183A /* StreakEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBE2522547D43227F2488788 /* StreakEngine.swift */; };
-		2C037D65FC2006A1710D1E57 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D6282E2767F699CE2E02075 /* PersistenceController.swift */; };
-		2DB1187393B9351208D3EF02 /* FocusOneWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8BF551B978609B53AB3D2EF /* FocusOneWidget.swift */; };
-		316312F5C85FC56BE9234268 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 255B7481F3F1187FA2290731 /* Assets.xcassets */; };
+			29B756B4955D9CA0B944183A /* StreakEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBE2522547D43227F2488788 /* StreakEngine.swift */; };
+			2C037D65FC2006A1710D1E57 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D6282E2767F699CE2E02075 /* PersistenceController.swift */; };
+			2DB1187393B9351208D3EF02 /* FocusOneWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8BF551B978609B53AB3D2EF /* FocusOneWidget.swift */; };
+			A1C72F8E4B6D4C5E90112233 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 162C6B3AAF08DF4CE0BBF0FF /* Localizable.strings */; };
+			B2D83A9F5C7E6D4F11223344 /* Localizable.stringsdict in Resources */ = {isa = PBXBuildFile; fileRef = 348EC58270C022FF55C673EA /* Localizable.stringsdict */; };
+			316312F5C85FC56BE9234268 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 255B7481F3F1187FA2290731 /* Assets.xcassets */; };
 		3315E6B4F82CB7BD3F2ACE46 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 154C10C42F282FF90F13662C /* AppRouter.swift */; };
 		3DC7867747D297188EC842F0 /* PremiumGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E68DBABE69C6C8B0B4AC3FF6 /* PremiumGate.swift */; };
 		446303425AF4EDA4FCF8DC09 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FF6390060191330879D5A5A /* SettingsView.swift */; };
@@ -344,12 +346,13 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		2BE7FC9528A24EDAFD0EC8AC /* FocusOneWidget */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = FC27014E5EEB975F6D4E65BC /* Build configuration list for PBXNativeTarget "FocusOneWidget" */;
-			buildPhases = (
-				6666A66A780B2FA8812AC10A /* Sources */,
-			);
+			2BE7FC9528A24EDAFD0EC8AC /* FocusOneWidget */ = {
+				isa = PBXNativeTarget;
+				buildConfigurationList = FC27014E5EEB975F6D4E65BC /* Build configuration list for PBXNativeTarget "FocusOneWidget" */;
+				buildPhases = (
+					6666A66A780B2FA8812AC10A /* Sources */,
+					C3E94BAC6D8F7E5012233445 /* Resources */,
+				);
 			buildRules = (
 			);
 			dependencies = (
@@ -419,9 +422,18 @@
 		};
 /* End PBXProject section */
 
-/* Begin PBXResourcesBuildPhase section */
-		1EF8BCE973FD3E5A591DFC11 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
+	/* Begin PBXResourcesBuildPhase section */
+			C3E94BAC6D8F7E5012233445 /* Resources */ = {
+				isa = PBXResourcesBuildPhase;
+				buildActionMask = 2147483647;
+				files = (
+					A1C72F8E4B6D4C5E90112233 /* Localizable.strings in Resources */,
+					B2D83A9F5C7E6D4F11223344 /* Localizable.stringsdict in Resources */,
+				);
+				runOnlyForDeploymentPostprocessing = 0;
+			};
+			1EF8BCE973FD3E5A591DFC11 /* Resources */ = {
+				isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				316312F5C85FC56BE9234268 /* Assets.xcassets in Resources */,

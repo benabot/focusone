@@ -2,16 +2,20 @@ import SwiftUI
 import CoreData
 
 struct SettingsView: View {
+    private let context: NSManagedObjectContext
     @StateObject private var viewModel: SettingsViewModel
     @State private var showPaywall = false
     @State private var showRemindersSheet = false
     @State private var showDayStartSheet = false
     @State private var showICloudSheet = false
+    @State private var showArchivesSheet = false
+    @State private var showNextRoutineSetup = false
+    @State private var showNextRoutineConfirmation = false
     @State private var gateFeature: PremiumFeature?
-    @State private var showComingSoonAlert = false
     @Environment(\.colorScheme) private var colorScheme
 
     init(context: NSManagedObjectContext) {
+        self.context = context
         _viewModel = StateObject(wrappedValue: SettingsViewModel(context: context))
     }
 
@@ -67,6 +71,23 @@ struct SettingsView: View {
                 message: viewModel.iCloudInfoMessage
             )
         }
+        .sheet(isPresented: $showArchivesSheet) {
+            SettingsArchivesSheet(items: viewModel.archivedRoutines)
+        }
+        .fullScreenCover(isPresented: $showNextRoutineSetup, onDismiss: {
+            viewModel.load()
+        }) {
+            OnboardingView(
+                context: context,
+                mode: .create
+            ) {
+                showNextRoutineSetup = false
+                viewModel.load()
+            } onCancel: {
+                showNextRoutineSetup = false
+                viewModel.load()
+            }
+        }
         .alert(item: $gateFeature) { feature in
             Alert(
                 title: Text(L10n.text(feature.gateTitleKey)),
@@ -77,10 +98,13 @@ struct SettingsView: View {
                 secondaryButton: .cancel(Text(L10n.text("premium.gate.dismiss")))
             )
         }
-        .alert(L10n.text("paywall.alert.title"), isPresented: $showComingSoonAlert) {
-            Button(L10n.text("common.close"), role: .cancel) {}
+        .alert(L10n.text("settings.premium.next.confirm.title"), isPresented: $showNextRoutineConfirmation) {
+            Button(L10n.text("settings.premium.next.confirm.action")) {
+                beginNextRoutine()
+            }
+            Button(L10n.text("onboarding.cancel"), role: .cancel) {}
         } message: {
-            Text(L10n.text("paywall.alert.message"))
+            Text(L10n.text("settings.premium.next.confirm.message"))
         }
     }
 
@@ -318,10 +342,27 @@ struct SettingsView: View {
     private func openPremiumContext(_ feature: PremiumFeature) {
         let gate = PremiumGate()
 
-        if gate.canAccess(feature) {
-            showComingSoonAlert = true
-        } else {
+        guard gate.canAccess(feature) else {
             gateFeature = feature
+            return
+        }
+
+        switch feature {
+        case .archives:
+            viewModel.loadArchivedRoutines()
+            showArchivesSheet = true
+        case .nextRoutine:
+            showNextRoutineConfirmation = true
+        case .fullHistory, .advancedWidgets:
+            showPaywall = true
+        }
+    }
+
+    private func beginNextRoutine() {
+        Task {
+            if await viewModel.prepareNextRoutine() {
+                showNextRoutineSetup = true
+            }
         }
     }
 }
@@ -359,6 +400,104 @@ private struct SettingsInfoSheet: View {
                 }
             }
         }
+    }
+}
+
+private struct SettingsArchivesSheet: View {
+    let items: [ArchivedRoutineSummary]
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    if items.isEmpty {
+                        emptyState
+                    } else {
+                        ForEach(items) { item in
+                            archiveCard(item)
+                        }
+                    }
+                }
+                .padding(Theme.padding)
+                .padding(.bottom, 24)
+            }
+            .background(Theme.backgroundGradient(for: Theme.presets[6], scheme: colorScheme).ignoresSafeArea())
+            .navigationTitle(L10n.text("settings.archives.title"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(L10n.text("common.close")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private var emptyState: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(L10n.text("settings.archives.empty.title"))
+                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .foregroundStyle(Theme.textPrimary(for: colorScheme))
+
+            Text(L10n.text("settings.archives.empty.message"))
+                .font(.system(size: 15, weight: .medium, design: .rounded))
+                .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(Theme.spacingM)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: Theme.radiusLarge, style: .continuous)
+                .fill(Color.white.opacity(colorScheme == .dark ? 0.14 : 0.64))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.radiusLarge, style: .continuous)
+                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.8), lineWidth: 1)
+        )
+    }
+
+    private func archiveCard(_ item: ArchivedRoutineSummary) -> some View {
+        HStack(alignment: .top, spacing: Theme.spacingM) {
+            ZStack {
+                Circle()
+                    .fill(Color(hex: item.colorHex).opacity(0.18))
+                    .frame(width: 44, height: 44)
+
+                Image(systemName: item.iconSymbol)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Color(hex: item.colorHex))
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.name)
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundStyle(Theme.textPrimary(for: colorScheme))
+
+                Text(item.periodText)
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundStyle(Theme.textSecondary(for: colorScheme))
+
+                Text(item.detailsText)
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color(hex: item.colorHex))
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(Theme.spacingM)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: Theme.radiusLarge, style: .continuous)
+                .fill(Color.white.opacity(colorScheme == .dark ? 0.14 : 0.64))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.radiusLarge, style: .continuous)
+                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.8), lineWidth: 1)
+        )
     }
 }
 

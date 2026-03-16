@@ -5,8 +5,8 @@ struct StatsView: View {
     @StateObject private var viewModel: StatsViewModel
     @Environment(\.colorScheme) private var colorScheme
     @State private var showPaywall = false
+    @State private var showFullHistory = false
     @State private var gateFeature: PremiumFeature?
-    @State private var showComingSoonAlert = false
 
     init(context: NSManagedObjectContext) {
         _viewModel = StateObject(wrappedValue: StatsViewModel(context: context))
@@ -47,6 +47,12 @@ struct StatsView: View {
         .sheet(isPresented: $showPaywall) {
             PaywallView()
         }
+        .sheet(isPresented: $showFullHistory) {
+            StatsFullHistorySheet(
+                months: viewModel.historyMonths,
+                preset: preset
+            )
+        }
         .alert(item: $gateFeature) { feature in
             Alert(
                 title: Text(L10n.text(feature.gateTitleKey)),
@@ -56,11 +62,6 @@ struct StatsView: View {
                 },
                 secondaryButton: .cancel(Text(L10n.text("premium.gate.dismiss")))
             )
-        }
-        .alert(L10n.text("paywall.alert.title"), isPresented: $showComingSoonAlert) {
-            Button(L10n.text("common.close"), role: .cancel) {}
-        } message: {
-            Text(L10n.text("paywall.alert.message"))
         }
     }
 
@@ -221,7 +222,7 @@ struct StatsView: View {
         let gate = PremiumGate()
 
         if gate.canAccess(.fullHistory) {
-            showComingSoonAlert = true
+            showFullHistory = true
         } else {
             gateFeature = .fullHistory
         }
@@ -289,5 +290,51 @@ private struct MonthGrid: View {
 struct StatsView_Previews: PreviewProvider {
     static var previews: some View {
         StatsView(context: PreviewSupport.context)
+    }
+}
+
+private struct StatsFullHistorySheet: View {
+    let months: [HistoryMonthSection]
+    let preset: ThemePreset
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: AppSpacing.l) {
+                    if months.isEmpty {
+                        AppSurface {
+                            Text(L10n.text("stats.full_history.empty"))
+                                .font(AppTypography.bodySmall)
+                                .foregroundStyle(AppColors.textSecondary(for: colorScheme))
+                        }
+                    } else {
+                        ForEach(months) { month in
+                            VStack(alignment: .leading, spacing: 12) {
+                                AppSectionTitle(title: month.title)
+
+                                AppSurface {
+                                    MonthGrid(days: month.days, preset: preset, colorScheme: colorScheme)
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding(Theme.padding)
+                .padding(.bottom, 24)
+            }
+            .background(Theme.backgroundGradient(for: preset, scheme: colorScheme).ignoresSafeArea())
+            .navigationTitle(L10n.text("stats.full_history"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(L10n.text("common.close")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
     }
 }

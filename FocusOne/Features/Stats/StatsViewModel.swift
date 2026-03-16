@@ -1,9 +1,16 @@
 import Foundation
 import CoreData
 
+struct HistoryMonthSection: Identifiable {
+    let id: String
+    let title: String
+    let days: [MonthGridDay]
+}
+
 @MainActor
 final class StatsViewModel: ObservableObject {
     @Published var monthDays: [MonthGridDay] = []
+    @Published var historyMonths: [HistoryMonthSection] = []
     @Published var completionRate7: Double = 0
     @Published var completionRate30: Double = 0
     @Published var currentStreak: Int = 0
@@ -25,6 +32,7 @@ final class StatsViewModel: ObservableObject {
         let repository = HabitRepository(context: context)
         guard let entity = repository.fetchActiveHabit() else {
             monthDays = []
+            historyMonths = []
             habitIconSymbol = nil
             return
         }
@@ -48,5 +56,50 @@ final class StatsViewModel: ObservableObject {
         formatter.locale = .current
         formatter.setLocalizedDateFormatFromTemplate("MMMM yyyy")
         monthTitle = formatter.string(from: now)
+
+        historyMonths = buildHistoryMonths(
+            habit: habit,
+            completions: completions,
+            currentDate: now,
+            formatter: formatter
+        )
+    }
+
+    private func buildHistoryMonths(
+        habit: Habit,
+        completions: [Completion],
+        currentDate: Date,
+        formatter: DateFormatter
+    ) -> [HistoryMonthSection] {
+        let calendar = Calendar.current
+        var monthSections: [HistoryMonthSection] = []
+
+        guard
+            let startMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: habit.startDate)),
+            var cursor = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate))
+        else {
+            return []
+        }
+
+        while cursor >= startMonth {
+            let year = calendar.component(.year, from: cursor)
+            let month = calendar.component(.month, from: cursor)
+            let title = formatter.string(from: cursor).capitalized
+
+            monthSections.append(
+                HistoryMonthSection(
+                    id: "\(year)-\(month)",
+                    title: title,
+                    days: streakEngine.monthGrid(habit: habit, completions: completions, year: year, month: month)
+                )
+            )
+
+            guard let previous = calendar.date(byAdding: .month, value: -1, to: cursor) else {
+                break
+            }
+            cursor = previous
+        }
+
+        return monthSections
     }
 }

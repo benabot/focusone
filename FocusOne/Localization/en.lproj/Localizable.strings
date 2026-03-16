@@ -86,6 +86,7 @@
 "stats.best" = "Best streak";
 "stats.full_history" = "Full history";
 "stats.full_history.caption" = "Beyond the last 30 days";
+"stats.full_history.empty" = "No days to show yet.";
 "stats.percent.format" = "%d%%";
 
 "settings.title" = "Settings";
@@ -128,17 +129,28 @@
 "premium.trial.ends_on" = "Until %@";
 
 "settings.premium.card.title.trial" = "10 days of Premium included";
-"settings.premium.card.subtitle.trial" = "Full history, archives, next routine, and advanced widgets during your trial.";
+"settings.premium.card.subtitle.trial" = "Full history beyond 30 days, archives, next routine, and advanced widgets during your trial.";
 "settings.premium.card.title.free" = "Unlock what comes next";
-"settings.premium.card.subtitle.free" = "Full history, archives, next routine, and advanced widgets. Still one active routine.";
+"settings.premium.card.subtitle.free" = "Full history beyond 30 days, archives, next routine, and advanced widgets. Still one active routine.";
 "settings.premium.card.title.active" = "Premium active";
-"settings.premium.card.subtitle.active" = "Full history, archives, next routine, and advanced widgets.";
-"settings.premium.context.archives" = "Archives";
-"settings.premium.context.next" = "Next routine";
+"settings.premium.card.subtitle.active" = "Full history beyond 30 days, archives, next routine, and advanced widgets.";
+"settings.premium.context.archives" = "View archives";
+"settings.premium.context.next" = "Move to the next routine";
+"settings.archives.title" = "Archives";
+"settings.premium.next.confirm.title" = "Move to the next routine";
+"settings.premium.next.confirm.message" = "The active routine will be archived. You can then set up the next one.";
+"settings.premium.next.confirm.action" = "Continue";
+"settings.archives.empty.title" = "No archived routines";
+"settings.archives.empty.message" = "Archive a routine to find it here with its history.";
+"settings.archives.date_range" = "From %@ to %@";
+"settings.archives.record" = "Best %@";
+"settings.archives.completions.none" = "No check-ins";
+"settings.archives.completions.one" = "1 check-in";
+"settings.archives.completions.other" = "%d check-ins";
 
 "paywall.badge" = "PREMIUM";
 "paywall.title" = "Upgrade to FocusOne Premium";
-"paywall.subtitle" = "Unlock full history, archives, advanced widgets, and what comes next.";
+"paywall.subtitle" = "Unlock full history beyond 30 days, archives, the next routine, and advanced widgets.";
 "paywall.note" = "Still one active routine at a time.";
 "paywall.cta" = "Get launch updates";
 "paywall.cta.upgrade" = "Unlock Premium";
@@ -157,20 +169,20 @@
 "paywall.alert.message" = "This option is not available in the app yet.";
 
 "premium.prompt.trial.title" = "Your Premium trial is active";
-"premium.prompt.trial.body" = "Enjoy full history, archives, the next routine, and advanced widgets until %@.";
+"premium.prompt.trial.body" = "Enjoy full history beyond 30 days, archives, the next routine, and advanced widgets until %@.";
 "premium.prompt.trial.secondary" = "Still one active routine at a time.";
 "premium.prompt.trial.cta" = "See Premium";
 "premium.prompt.trial.dismiss" = "Later";
 
 "premium.prompt.ending.title" = "Premium ends tomorrow";
 "premium.prompt.ending.body" = "Free mode keeps your active routine, daily validation, and basic progress.";
-"premium.prompt.ending.secondary" = "Premium keeps full history, archives, the next routine, and advanced widgets unlocked.";
+"premium.prompt.ending.secondary" = "Premium keeps full history beyond 30 days, archives, the next routine, and advanced widgets unlocked.";
 "premium.prompt.ending.cta" = "Keep Premium";
 "premium.prompt.ending.dismiss" = "Later";
 
 "premium.prompt.expired.title" = "Premium access has ended";
 "premium.prompt.expired.body" = "You still keep your active routine, daily validation, and basic progress.";
-"premium.prompt.expired.secondary" = "Unlock Premium to get back full history, archives, the next routine, and advanced widgets.";
+"premium.prompt.expired.secondary" = "Unlock Premium to get back full history beyond 30 days, archives, the next routine, and advanced widgets.";
 "premium.prompt.expired.cta" = "Unlock Premium";
 "premium.prompt.expired.dismiss" = "Continue for free";
 
@@ -191,9 +203,17 @@
 "premium.gate.dismiss" = "Later";
 
 "widget.title" = "FocusOne";
-"widget.description" = "Track your daily streak at a glance.";
+"widget.description" = "See the active routine and its streak at a glance.";
+"widget.placeholder_name" = "Routine";
+"widget.overline" = "Active routine";
+"widget.current_streak" = "Active streak";
+"widget.today" = "Today";
 "widget.done" = "Done";
-"widget.not_done" = "Not done";
+"widget.not_done" = "To validate";
+"widget.state.done" = "Done";
+"widget.state.pending" = "To validate";
+"widget.support.done" = "Today's validation is saved.";
+"widget.support.pending" = "Validate today to extend the streak.";
 
 "theme.sunrise" = "Sunrise";
 "theme.mango" = "Mango";
