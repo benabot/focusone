@@ -42,15 +42,29 @@ private struct OnboardingContent: View {
     @State private var showRemindersSheet = false
     @State private var showDayStartSheet = false
 
-    private let iconColumns = Array(repeating: GridItem(.fixed(44), spacing: 12), count: 5)
-    private let colorColumns = Array(repeating: GridItem(.fixed(30), spacing: 14), count: 6)
+    private let iconColumns = Array(repeating: GridItem(.fixed(48), spacing: 12), count: 5)
+    private let colorColumns = Array(repeating: GridItem(.fixed(36), spacing: 14), count: 6)
 
     private var displayedIconOptions: [String] {
-        Array(iconOptions.prefix(12))
+        Array(iconOptions.prefix(10))
     }
 
     private var isNameValid: Bool {
-        !viewModel.habitName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !trimmedHabitName.isEmpty
+    }
+
+    private var trimmedHabitName: String {
+        viewModel.habitName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var previewName: String {
+        trimmedHabitName.isEmpty
+            ? L10n.text("onboarding.preview_name_placeholder")
+            : trimmedHabitName
+    }
+
+    private var selectedPreset: ThemePreset {
+        Theme.preset(for: viewModel.selectedThemeHex)
     }
 
     private var reminderSummary: String {
@@ -69,11 +83,6 @@ private struct OnboardingContent: View {
         }
     }
 
-    private var subtitleSecondary: String {
-        let key = mode == .edit ? "onboarding.edit_subtitle_secondary" : "onboarding.subtitle_secondary"
-        return L10n.text(key).trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
     private var titleText: String {
         mode == .edit ? L10n.text("onboarding.configuration") : L10n.text("onboarding.title")
     }
@@ -83,50 +92,41 @@ private struct OnboardingContent: View {
     }
 
     private var primaryActionTitle: String {
-        mode == .edit ? L10n.text("onboarding.save") : L10n.text("common.cta.start")
+        mode == .edit ? L10n.text("onboarding.save") : L10n.text("onboarding.start")
     }
 
     private var cancelActionTitle: String? {
-        mode == .edit ? L10n.text("onboarding.cancel") : nil
+        onCancel == nil ? nil : L10n.text("onboarding.cancel")
     }
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color(hex: "FFECDD"), Color(hex: "FFF7EE")],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            Theme.backgroundGradient(for: selectedPreset, scheme: colorScheme)
+                .ignoresSafeArea()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: Theme.spacingL) {
                     header
+                    previewCard
                     nameSection
                     iconSection
                     themeSection
                     preferencesSection
-
-                    if let errorMessage = viewModel.errorMessage {
-                        Text(errorMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.red)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(20)
-                .padding(.bottom, 120)
+                .padding(Theme.padding)
+                .padding(.bottom, 132)
             }
             .scrollIndicators(.hidden)
         }
         .safeAreaInset(edge: .bottom) {
-            BottomCTAContainer(
+            ConfigurationFooterBar(
                 primaryTitle: primaryActionTitle,
                 secondaryTitle: cancelActionTitle,
                 tintHex: viewModel.selectedThemeHex,
                 isEnabled: isNameValid && !viewModel.isSaving,
                 isLoading: viewModel.isSaving,
+                errorMessage: viewModel.errorMessage,
                 primaryAction: {
                     isNameFocused = false
                     Task {
@@ -148,62 +148,67 @@ private struct OnboardingContent: View {
             DayStartSheet(viewModel: viewModel)
                 .presentationDetents([.medium])
         }
-    }
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(titleText)
-                .font(.system(size: 34, weight: .bold, design: .rounded))
-                .foregroundStyle(Theme.textPrimary(for: colorScheme))
-
-            Text(subtitleText)
-                .font(.system(size: 17, weight: .regular, design: .rounded))
-                .foregroundStyle(Theme.textSecondary(for: colorScheme))
-                .fixedSize(horizontal: false, vertical: true)
-
-            if !subtitleSecondary.isEmpty {
-                Text(subtitleSecondary)
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
-                    .foregroundStyle(Theme.textSecondary(for: colorScheme).opacity(0.85))
-                    .lineLimit(1)
+        .onChange(of: viewModel.habitName) {
+            if viewModel.errorMessage != nil {
+                viewModel.errorMessage = nil
             }
-
-            OnboardingBlob()
-                .frame(width: 128, height: 80)
-                .padding(.top, 4)
         }
     }
 
-    private var nameSection: some View {
+    private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            SectionHeader(title: L10n.text("onboarding.habit_section"))
+            Text(titleText)
+                .font(.system(size: 38, weight: .bold, design: .rounded))
+                .foregroundStyle(Theme.textPrimary(for: colorScheme))
 
-            TextField(L10n.text("onboarding.name_placeholder"), text: $viewModel.habitName)
-                .focused($isNameFocused)
-                .textInputAutocapitalization(.sentences)
-                .font(.system(size: 18, weight: .regular, design: .rounded))
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-                .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(Color.white.opacity(colorScheme == .dark ? 0.2 : 0.74))
-                )
+            Text(subtitleText)
+                .font(.system(size: 18, weight: .medium, design: .rounded))
+                .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var previewCard: some View {
+        RoutinePreviewCard(
+            name: previewName,
+            iconSymbol: viewModel.selectedIconSymbol,
+            reminderSummary: reminderSummary,
+            dayStartLabel: L10n.dayHourLabel(viewModel.dayStartHour),
+            tintHex: viewModel.selectedThemeHex
+        )
+    }
+
+    private var nameSection: some View {
+        VStack(alignment: .leading, spacing: Theme.spacingS) {
+            FormSectionTitle(title: L10n.text("onboarding.habit_section"))
+
+            ConfigurationSurface(padding: 0) {
+                TextField(L10n.text("onboarding.name_placeholder"), text: $viewModel.habitName)
+                    .focused($isNameFocused)
+                    .textInputAutocapitalization(.sentences)
+                    .font(.system(size: 18, weight: .medium, design: .rounded))
+                    .foregroundStyle(Theme.textPrimary(for: colorScheme))
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 16)
+            }
         }
     }
 
     private var iconSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: L10n.text("onboarding.icon"))
+        VStack(alignment: .leading, spacing: Theme.spacingS) {
+            FormSectionTitle(title: L10n.text("onboarding.icon"))
 
-            LazyVGrid(columns: iconColumns, alignment: .leading, spacing: 12) {
-                ForEach(displayedIconOptions, id: \.self) { symbol in
-                    IconChip(
-                        symbol: symbol,
-                        isSelected: viewModel.selectedIconSymbol == symbol,
-                        tintHex: viewModel.selectedThemeHex
-                    ) {
-                        withAnimation(.spring(response: 0.28, dampingFraction: 0.72)) {
-                            viewModel.selectedIconSymbol = symbol
+            ConfigurationSurface {
+                LazyVGrid(columns: iconColumns, alignment: .leading, spacing: 12) {
+                    ForEach(displayedIconOptions, id: \.self) { symbol in
+                        IconChip(
+                            symbol: symbol,
+                            isSelected: viewModel.selectedIconSymbol == symbol,
+                            tintHex: viewModel.selectedThemeHex
+                        ) {
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.72)) {
+                                viewModel.selectedIconSymbol = symbol
+                            }
                         }
                     }
                 }
@@ -212,83 +217,141 @@ private struct OnboardingContent: View {
     }
 
     private var themeSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: L10n.text("onboarding.theme"))
+        VStack(alignment: .leading, spacing: Theme.spacingS) {
+            FormSectionTitle(title: L10n.text("onboarding.theme"))
 
-            LazyVGrid(columns: colorColumns, alignment: .leading, spacing: 14) {
-                ForEach(Theme.presets) { preset in
-                    ColorDot(
-                        hex: preset.primaryHex,
-                        isSelected: viewModel.selectedThemeHex == preset.primaryHex
-                    ) {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
-                            viewModel.selectedThemeHex = preset.primaryHex
+            ConfigurationSurface {
+                LazyVGrid(columns: colorColumns, alignment: .leading, spacing: 14) {
+                    ForEach(Theme.presets) { preset in
+                        ColorDot(
+                            hex: preset.primaryHex,
+                            isSelected: viewModel.selectedThemeHex == preset.primaryHex
+                        ) {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                                viewModel.selectedThemeHex = preset.primaryHex
+                            }
                         }
+                        .accessibilityLabel(L10n.text(preset.nameKey))
                     }
-                    .accessibilityLabel(L10n.text(preset.nameKey))
                 }
             }
         }
     }
 
     private var preferencesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: L10n.text("onboarding.preferences"))
+        VStack(alignment: .leading, spacing: Theme.spacingS) {
+            FormSectionTitle(title: L10n.text("onboarding.preferences"))
 
-            CollapsedRow(
-                title: L10n.text("onboarding.reminders"),
-                value: reminderSummary,
-                actionTitle: L10n.text("onboarding.manage"),
-                tintHex: viewModel.selectedThemeHex,
-                action: { showRemindersSheet = true }
-            )
+            ConfigurationSurface(padding: 0) {
+                VStack(spacing: 0) {
+                    ConfigurationPreferenceRow(
+                        title: L10n.text("onboarding.reminders"),
+                        value: reminderSummary,
+                        tintHex: viewModel.selectedThemeHex,
+                        action: { showRemindersSheet = true }
+                    )
 
-            CollapsedRow(
-                title: L10n.text("onboarding.day_label"),
-                value: L10n.dayHourLabel(viewModel.dayStartHour),
-                actionTitle: L10n.text("onboarding.manage"),
-                tintHex: viewModel.selectedThemeHex,
-                action: { showDayStartSheet = true }
-            )
+                    sectionDivider
+
+                    ConfigurationPreferenceRow(
+                        title: L10n.text("onboarding.day_label"),
+                        value: L10n.dayHourLabel(viewModel.dayStartHour),
+                        tintHex: viewModel.selectedThemeHex,
+                        action: { showDayStartSheet = true }
+                    )
+                }
+            }
         }
+    }
+
+    private var sectionDivider: some View {
+        Divider()
+            .overlay(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.75))
+            .padding(.horizontal, 18)
     }
 }
 
-private struct SectionHeader: View {
+private struct FormSectionTitle: View {
     let title: String
+
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Text(title)
-            .font(.system(size: 13, weight: .semibold, design: .rounded))
+            .font(.system(size: 14, weight: .semibold, design: .rounded))
             .foregroundStyle(Theme.textSecondary(for: colorScheme))
     }
 }
 
-private struct OnboardingBlob: View {
+private struct ConfigurationSurface<Content: View>: View {
+    let padding: CGFloat
+    let content: Content
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    init(padding: CGFloat = Theme.spacingM, @ViewBuilder content: () -> Content) {
+        self.padding = padding
+        self.content = content()
+    }
+
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 30, style: .continuous)
-                .fill(Color.white.opacity(0.55))
-                .frame(width: 122, height: 72)
-                .rotationEffect(.degrees(-8))
+        content
+            .padding(padding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: Theme.radiusLarge, style: .continuous)
+                    .fill(Theme.surface(for: colorScheme).opacity(colorScheme == .dark ? 0.94 : 0.92))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.radiusLarge, style: .continuous)
+                    .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.82), lineWidth: 1)
+            )
+    }
+}
 
-            Circle()
-                .fill(Color(hex: "FFD9C9").opacity(0.9))
-                .frame(width: 56, height: 56)
-                .offset(x: -22, y: -8)
+private struct RoutinePreviewCard: View {
+    let name: String
+    let iconSymbol: String
+    let reminderSummary: String
+    let dayStartLabel: String
+    let tintHex: String
 
-            Circle()
-                .fill(Color.white.opacity(0.92))
-                .frame(width: 42, height: 42)
-                .offset(x: 28, y: 10)
+    @Environment(\.colorScheme) private var colorScheme
 
-            Capsule()
-                .fill(Color(hex: "FFB76B").opacity(0.46))
-                .frame(width: 56, height: 16)
-                .offset(x: 8, y: 24)
+    var body: some View {
+        ConfigurationSurface(padding: Theme.spacingM) {
+            VStack(alignment: .leading, spacing: Theme.spacingS) {
+                HStack(spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .fill(Color(hex: tintHex).opacity(colorScheme == .dark ? 0.22 : 0.16))
+                            .frame(width: 56, height: 56)
+
+                        Image(systemName: iconSymbol)
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundStyle(Color(hex: tintHex))
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(name)
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .foregroundStyle(Theme.textPrimary(for: colorScheme))
+                            .lineLimit(2)
+
+                        Text("\(reminderSummary) • \(dayStartLabel)")
+                            .font(.system(size: 15, weight: .medium, design: .rounded))
+                            .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                            .lineLimit(1)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    Circle()
+                        .fill(Color(hex: tintHex))
+                        .frame(width: 12, height: 12)
+                }
+            }
         }
-        .accessibilityHidden(true)
     }
 }
 
@@ -297,27 +360,28 @@ private struct IconChip: View {
     let isSelected: Bool
     let tintHex: String
     let action: () -> Void
+
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 18, weight: .semibold))
+                .font(.system(size: 19, weight: .semibold))
                 .foregroundStyle(
                     isSelected
                         ? Color(hex: tintHex)
-                        : Theme.textPrimary(for: colorScheme).opacity(0.7)
+                        : Theme.textPrimary(for: colorScheme).opacity(0.72)
                 )
-                .frame(width: 44, height: 44)
+                .frame(width: 48, height: 48)
                 .background(
                     Circle()
-                        .fill(Color.white.opacity(colorScheme == .dark ? 0.24 : 0.68))
+                        .fill(Color.white.opacity(colorScheme == .dark ? 0.18 : 0.78))
                 )
                 .overlay {
                     Circle()
                         .stroke(isSelected ? Color(hex: tintHex) : Color.clear, lineWidth: 2)
                 }
-                .scaleEffect(isSelected ? 1.07 : 1)
+                .scaleEffect(isSelected ? 1.06 : 1)
         }
         .buttonStyle(.plain)
         .animation(.spring(response: 0.28, dampingFraction: 0.72), value: isSelected)
@@ -334,25 +398,25 @@ private struct ColorDot: View {
             ZStack {
                 Circle()
                     .fill(Color(hex: hex))
-                    .frame(width: 30, height: 30)
+                    .frame(width: 36, height: 36)
 
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(.white)
                 }
             }
-            .frame(width: 42, height: 42)
+            .frame(width: 46, height: 46)
             .overlay {
                 if isSelected {
                     ZStack {
                         Circle()
                             .stroke(.white, lineWidth: 2)
-                            .frame(width: 36, height: 36)
+                            .frame(width: 40, height: 40)
 
                         Circle()
-                            .stroke(Color(hex: hex).opacity(0.45), lineWidth: 2)
-                            .frame(width: 42, height: 42)
+                            .stroke(Color(hex: hex).opacity(0.42), lineWidth: 2)
+                            .frame(width: 46, height: 46)
                     }
                 }
             }
@@ -362,70 +426,92 @@ private struct ColorDot: View {
     }
 }
 
-private struct CollapsedRow: View {
+private struct ConfigurationPreferenceRow: View {
     let title: String
     let value: String
-    let actionTitle: String
     let tintHex: String
     let action: () -> Void
+
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        HStack(spacing: 12) {
-            Text(title)
-                .font(.system(size: 17, weight: .semibold, design: .rounded))
-                .foregroundStyle(Theme.textPrimary(for: colorScheme))
+        Button(action: action) {
+            HStack(spacing: Theme.spacingS) {
+                Text(title)
+                    .font(.system(size: 17, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Theme.textPrimary(for: colorScheme))
 
-            Spacer()
+                Spacer(minLength: Theme.spacingS)
 
-            Text(value)
-                .font(.system(size: 17, weight: .medium, design: .rounded))
-                .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                Text(value)
+                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                    .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                    .lineLimit(1)
 
-            Button(actionTitle, action: action)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                .foregroundStyle(Color(hex: tintHex))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color.white.opacity(colorScheme == .dark ? 0.2 : 0.64))
-                .clipShape(Capsule())
-                .buttonStyle(.plain)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color(hex: tintHex).opacity(0.9))
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+            .contentShape(Rectangle())
         }
-        .contentShape(Rectangle())
-        .onTapGesture(perform: action)
+        .buttonStyle(.plain)
     }
 }
 
-private struct BottomCTAContainer: View {
+private struct ConfigurationFooterBar: View {
     let primaryTitle: String
     let secondaryTitle: String?
     let tintHex: String
     let isEnabled: Bool
     let isLoading: Bool
+    let errorMessage: String?
     let primaryAction: () -> Void
     let secondaryAction: () -> Void
+
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        VStack(spacing: 8) {
-            if isLoading {
-                ProgressView()
-                    .tint(.secondary)
+        VStack(spacing: 10) {
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            if let secondaryTitle {
-                Button(secondaryTitle, action: secondaryAction)
-                    .font(.system(size: 15, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.secondary)
-                    .buttonStyle(.plain)
-            }
+            HStack(spacing: 12) {
+                if let secondaryTitle {
+                    Button(secondaryTitle, action: secondaryAction)
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                        .frame(width: 118)
+                        .frame(height: 56)
+                        .background(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .fill(Theme.surface(for: colorScheme))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .stroke(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.8), lineWidth: 1)
+                        )
+                        .buttonStyle(.plain)
+                }
 
-            Button(action: primaryAction) {
-                Text(primaryTitle)
-                    .font(.system(size: 19, weight: .bold, design: .rounded))
+                Button(action: primaryAction) {
+                    HStack(spacing: 8) {
+                        if isLoading {
+                            ProgressView()
+                                .tint(isEnabled ? .white : Theme.textSecondary(for: colorScheme))
+                        }
+
+                        Text(primaryTitle)
+                            .font(.system(size: 19, weight: .bold, design: .rounded))
+                    }
                     .foregroundStyle(primaryTextColor)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
+                    .frame(height: 56)
                     .background(
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
                             .fill(primaryBackgroundColor)
@@ -434,18 +520,23 @@ private struct BottomCTAContainer: View {
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
                             .stroke(primaryBorderColor, lineWidth: 1)
                     )
+                }
+                .buttonStyle(.plain)
+                .disabled(!isEnabled)
             }
-            .buttonStyle(.plain)
-            .disabled(!isEnabled)
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, Theme.padding)
         .padding(.top, 12)
         .padding(.bottom, 10)
         .background(
-            Color(hex: "FFF8F0")
-                .opacity(0.94)
+            Theme.surface(for: colorScheme)
+                .opacity(colorScheme == .dark ? 0.98 : 0.96)
                 .ignoresSafeArea(edges: .bottom)
         )
+        .overlay(alignment: .top) {
+            Divider()
+                .overlay(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.8))
+        }
     }
 
     private var primaryTextColor: Color {
@@ -453,7 +544,7 @@ private struct BottomCTAContainer: View {
     }
 
     private var primaryBackgroundColor: Color {
-        isEnabled ? Color(hex: tintHex) : Color.white.opacity(colorScheme == .dark ? 0.14 : 0.82)
+        isEnabled ? Color(hex: tintHex) : Color.white.opacity(colorScheme == .dark ? 0.12 : 0.82)
     }
 
     private var primaryBorderColor: Color {

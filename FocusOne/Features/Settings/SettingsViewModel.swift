@@ -100,10 +100,20 @@ final class SettingsViewModel: ObservableObject {
 
     var remindersSummaryText: String {
         guard notificationsEnabled, !reminderTimes.isEmpty else {
-            return L10n.text("settings.status.none")
+            return L10n.text("settings.reminders.summary.none")
         }
 
-        return reminderTimes
+        switch reminderTimes.count {
+        case 1:
+            return L10n.text("settings.reminders.summary.one")
+        default:
+            let format = L10n.text("settings.reminders.summary.many")
+            return String.localizedStringWithFormat(format, reminderTimes.count)
+        }
+    }
+
+    var reminderTimesText: String {
+        reminderTimes
             .sorted()
             .map(formattedTime(for:))
             .joined(separator: ", ")

@@ -54,24 +54,23 @@ struct HomeView: View {
 
     private func topBar(habit: Habit, preset: ThemePreset) -> some View {
         HStack(alignment: .center, spacing: Theme.spacingS) {
-            // Icon + name
             HStack(spacing: Theme.spacingS) {
                 ZStack {
                     Circle()
-                        .fill(Color(hex: preset.primaryHex).opacity(colorScheme == .dark ? 0.25 : 0.15))
-                        .frame(width: 46, height: 46)
+                        .fill(Color(hex: preset.primaryHex).opacity(colorScheme == .dark ? 0.22 : 0.14))
+                        .frame(width: 42, height: 42)
                     Image(systemName: habit.iconSymbol)
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(Color(hex: preset.primaryHex))
                 }
 
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(L10n.text("home.title").uppercased())
                         .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .foregroundStyle(Theme.textSecondary(for: colorScheme))
-                        .kerning(0.5)
+                        .foregroundStyle(Color(hex: preset.primaryHex).opacity(0.88))
+                        .kerning(0.8)
                     Text(habit.name)
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
                         .foregroundStyle(Theme.textPrimary(for: colorScheme))
                         .lineLimit(1)
                 }
@@ -83,12 +82,12 @@ struct HomeView: View {
                 showEditConfiguration = true
             } label: {
                 Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(Theme.textSecondary(for: colorScheme))
-                    .frame(width: 40, height: 40)
+                    .frame(width: 38, height: 38)
                     .background(
                         Circle()
-                            .fill(Color.white.opacity(colorScheme == .dark ? 0.12 : 0.55))
+                            .fill(Color.white.opacity(colorScheme == .dark ? 0.12 : 0.62))
                     )
             }
             .buttonStyle(.plain)
@@ -197,13 +196,13 @@ private struct HomeHeroCard: View {
     private var metricsRow: some View {
         HStack(spacing: 12) {
             metricCard(
-                title: L10n.text("home.today.label"),
+                title: L10n.text("home.today.short"),
                 value: todayValue,
                 valueColor: isDoneToday ? Color(hex: "48A16C") : Theme.textPrimary(for: colorScheme)
             )
 
             metricCard(
-                title: L10n.text("home.best_streak"),
+                title: L10n.text("home.best.short"),
                 value: bestValue,
                 valueColor: Theme.textPrimary(for: colorScheme)
             )
@@ -240,6 +239,12 @@ private struct HomeHeroCard: View {
                 .lineLimit(1)
         }
         .foregroundStyle(Theme.textSecondary(for: colorScheme))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            Capsule()
+                .fill(Color.white.opacity(colorScheme == .dark ? 0.10 : 0.56))
+        )
     }
 
     private var primaryButton: some View {
@@ -274,8 +279,8 @@ private struct HomeHeroCard: View {
             .fill(
                 LinearGradient(
                     colors: colorScheme == .dark
-                        ? [Color(hex: accentHex).opacity(0.28), Color(hex: accentHex).opacity(0.12)]
-                        : [Color(hex: accentHex).opacity(0.22), Color.white.opacity(0.72)],
+                        ? [Color(hex: accentHex).opacity(0.30), Color(hex: accentHex).opacity(0.14)]
+                        : [Color(hex: accentHex).opacity(0.24), Color.white.opacity(0.78)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )

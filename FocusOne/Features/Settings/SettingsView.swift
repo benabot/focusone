@@ -4,6 +4,8 @@ import CoreData
 struct SettingsView: View {
     @StateObject private var viewModel: SettingsViewModel
     @State private var showPaywall = false
+    @State private var showRemindersSheet = false
+    @State private var showDayStartSheet = false
     @Environment(\.colorScheme) private var colorScheme
 
     init(context: NSManagedObjectContext) {
@@ -46,6 +48,14 @@ struct SettingsView: View {
         .sheet(isPresented: $showPaywall) {
             PaywallView()
         }
+        .sheet(isPresented: $showRemindersSheet) {
+            SettingsRemindersSheet(viewModel: viewModel)
+                .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: $showDayStartSheet) {
+            SettingsDayStartSheet(viewModel: viewModel)
+                .presentationDetents([.medium])
+        }
     }
 
     private var remindersSection: some View {
@@ -60,24 +70,20 @@ struct SettingsView: View {
 
                 panelDivider
 
-                SettingsValueRow(
+                navigationRow(
                     title: L10n.text("settings.reminders"),
                     value: viewModel.remindersSummaryText,
-                    actionTitle: viewModel.reminderTimes.count < 2 ? L10n.text("settings.add_reminder") : nil,
-                    actionTint: Theme.accent,
-                    action: {
+                    action: { showRemindersSheet = true }
+                )
+
+                if viewModel.reminderTimes.count < 2 {
+                    panelDivider
+
+                    buttonRow(title: L10n.text("settings.add_reminder")) {
                         if viewModel.reminderTimes.count < 2 {
                             viewModel.addReminder()
                         }
-                    }
-                ) {
-                }
-
-                if viewModel.notificationsEnabled {
-                    ForEach(viewModel.reminderTimes.indices, id: \.self) { index in
-                        panelDivider
-
-                        reminderEditorRow(index: index)
+                        showRemindersSheet = true
                     }
                 }
             }
@@ -89,16 +95,11 @@ struct SettingsView: View {
             sectionTitle(L10n.text("settings.section.day"))
 
             settingsPanel {
-                SettingsValueRow(title: L10n.text("settings.day_start"), value: viewModel.dayStartLabelText) {
-                    Menu(viewModel.dayStartLabelText) {
-                        ForEach(0..<24, id: \.self) { hour in
-                            Button(L10n.dayHourLabel(hour)) {
-                                viewModel.dayStartHour = hour
-                            }
-                        }
-                    }
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
-                }
+                navigationRow(
+                    title: L10n.text("settings.day_start"),
+                    value: viewModel.dayStartLabelText,
+                    action: { showDayStartSheet = true }
+                )
             }
         }
     }
@@ -177,7 +178,7 @@ struct SettingsView: View {
 
                 PrimaryButton(
                     title: L10n.text("settings.open_paywall"),
-                    tintHex: Theme.presets[4].primaryHex
+                    tintHex: Theme.presets[3].primaryHex
                 ) {
                     showPaywall = true
                 }
@@ -194,33 +195,35 @@ struct SettingsView: View {
         }
     }
 
-    private func reminderEditorRow(index: Int) -> some View {
-        HStack(spacing: Theme.spacingS) {
-            Text("\(L10n.text("settings.reminder")) \(index + 1)")
-                .font(.system(size: 16, weight: .medium, design: .rounded))
-                .foregroundStyle(Theme.textPrimary(for: colorScheme))
-
-            Spacer(minLength: Theme.spacingS)
-
-            DatePicker(
-                L10n.text("settings.reminder"),
-                selection: Binding(
-                    get: { viewModel.reminderTimes[index] },
-                    set: { viewModel.reminderTimes[index] = $0 }
-                ),
-                displayedComponents: [.hourAndMinute]
-            )
-            .labelsHidden()
-
-            Button(L10n.text("common.remove")) {
-                viewModel.removeReminder(at: index)
+    private func navigationRow(title: String, value: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            SettingsValueRow(title: title, value: value) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Theme.accent)
             }
-            .font(.system(size: 13, weight: .semibold, design: .rounded))
-            .foregroundStyle(Theme.textSecondary(for: colorScheme))
-            .buttonStyle(.plain)
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, Theme.spacingM)
-        .padding(.vertical, Theme.spacingS)
+        .buttonStyle(.plain)
+    }
+
+    private func buttonRow(title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: Theme.spacingS) {
+                Text(title)
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Theme.accent)
+
+                Spacer(minLength: Theme.spacingS)
+
+                Image(systemName: "plus")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(Theme.accent)
+            }
+            .padding(.horizontal, Theme.spacingM)
+            .padding(.vertical, 15)
+        }
+        .buttonStyle(.plain)
     }
 
     private func settingsPanel<Content: View>(@ViewBuilder content: () -> Content) -> some View {
@@ -254,24 +257,15 @@ struct SettingsView: View {
 private struct SettingsValueRow<Accessory: View>: View {
     let title: String
     let value: String?
-    let actionTitle: String?
-    let actionTint: Color
-    let action: (() -> Void)?
     let accessory: Accessory
 
     init(
         title: String,
         value: String? = nil,
-        actionTitle: String? = nil,
-        actionTint: Color = Theme.accent,
-        action: (() -> Void)? = nil,
         @ViewBuilder accessory: () -> Accessory = { EmptyView() }
     ) {
         self.title = title
         self.value = value
-        self.actionTitle = actionTitle
-        self.actionTint = actionTint
-        self.action = action
         self.accessory = accessory()
     }
 
@@ -292,19 +286,149 @@ private struct SettingsValueRow<Accessory: View>: View {
                     .lineLimit(1)
             }
 
-            if let actionTitle {
-                Button(actionTitle) {
-                    action?()
-                }
-                .font(.system(size: 15, weight: .semibold, design: .rounded))
-                .foregroundStyle(actionTint)
-                .buttonStyle(.plain)
-            }
-
             accessory
         }
         .padding(.horizontal, Theme.spacingM)
         .padding(.vertical, 15)
+    }
+}
+
+private struct SettingsRemindersSheet: View {
+    @ObservedObject var viewModel: SettingsViewModel
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Toggle(L10n.text("settings.notifications"), isOn: $viewModel.notificationsEnabled)
+                        .tint(Theme.accent)
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+
+                    if viewModel.notificationsEnabled {
+                        if !viewModel.reminderTimes.isEmpty {
+                            Text(viewModel.reminderTimesText)
+                                .font(.system(size: 14, weight: .medium, design: .rounded))
+                                .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                        }
+
+                        ForEach(viewModel.reminderTimes.indices, id: \.self) { index in
+                            HStack(spacing: 12) {
+                                Text("\(L10n.text("settings.reminder")) \(index + 1)")
+                                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                                    .foregroundStyle(Theme.textPrimary(for: colorScheme))
+
+                                Spacer()
+
+                                DatePicker(
+                                    L10n.text("settings.reminder"),
+                                    selection: Binding(
+                                        get: { viewModel.reminderTimes[index] },
+                                        set: { viewModel.reminderTimes[index] = $0 }
+                                    ),
+                                    displayedComponents: [.hourAndMinute]
+                                )
+                                .labelsHidden()
+
+                                Button(L10n.text("common.remove")) {
+                                    viewModel.removeReminder(at: index)
+                                }
+                                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                                .buttonStyle(.plain)
+                            }
+                            .padding(16)
+                            .background(
+                                RoundedRectangle(cornerRadius: Theme.radiusMedium, style: .continuous)
+                                    .fill(Color.white.opacity(colorScheme == .dark ? 0.12 : 0.64))
+                            )
+                        }
+
+                        if viewModel.reminderTimes.count < 2 {
+                            Button {
+                                viewModel.addReminder()
+                            } label: {
+                                Label(L10n.text("settings.add_reminder"), systemImage: "plus")
+                                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(Theme.accent)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .padding(20)
+            }
+            .navigationTitle(L10n.text("settings.reminders"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(L10n.text("common.close")) {
+                        dismiss()
+                    }
+                }
+            }
+            .background(
+                Theme.backgroundGradient(for: Theme.presets[6], scheme: colorScheme)
+                    .ignoresSafeArea()
+            )
+        }
+    }
+}
+
+private struct SettingsDayStartSheet: View {
+    @ObservedObject var viewModel: SettingsViewModel
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var dayStartBinding: Binding<Date> {
+        Binding(
+            get: {
+                Calendar.current.date(
+                    bySettingHour: viewModel.dayStartHour,
+                    minute: 0,
+                    second: 0,
+                    of: Date()
+                ) ?? Date()
+            },
+            set: { date in
+                viewModel.dayStartHour = Calendar.current.component(.hour, from: date)
+            }
+        )
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 18) {
+                DatePicker(
+                    L10n.text("settings.day_start"),
+                    selection: dayStartBinding,
+                    displayedComponents: [.hourAndMinute]
+                )
+                .datePickerStyle(.wheel)
+                .labelsHidden()
+
+                Text(L10n.dayHourLabel(viewModel.dayStartHour))
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Theme.accent)
+
+                Spacer()
+            }
+            .padding(20)
+            .navigationTitle(L10n.text("settings.day_start"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(L10n.text("common.close")) {
+                        dismiss()
+                    }
+                }
+            }
+            .background(
+                Theme.backgroundGradient(for: Theme.presets[6], scheme: colorScheme)
+                    .ignoresSafeArea()
+            )
+        }
     }
 }
 

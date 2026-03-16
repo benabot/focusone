@@ -5,6 +5,8 @@ struct PaywallView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var showLaunchAlert = false
 
+    private let accentHex = Theme.presets[3].primaryHex
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -14,7 +16,7 @@ struct PaywallView: View {
 
                     VStack(spacing: Theme.spacingS) {
                         benefitRow(
-                            symbol: "square.stack.3d.up.fill",
+                            symbol: "arrow.right.circle.fill",
                             title: L10n.text("paywall.benefit.habits.title"),
                             detail: L10n.text("paywall.benefit.habits.detail")
                         )
@@ -29,7 +31,7 @@ struct PaywallView: View {
                             detail: L10n.text("paywall.benefit.widgets.detail")
                         )
                         benefitRow(
-                            symbol: "arrow.triangle.branch",
+                            symbol: "archivebox.fill",
                             title: L10n.text("paywall.benefit.cycles.title"),
                             detail: L10n.text("paywall.benefit.cycles.detail")
                         )
@@ -38,7 +40,7 @@ struct PaywallView: View {
                 .padding(Theme.spacingL)
                 .padding(.bottom, 120)
             }
-            .background(Theme.backgroundGradient(for: Theme.presets[4], scheme: colorScheme).ignoresSafeArea())
+            .background(Theme.backgroundGradient(for: Theme.presets[3], scheme: colorScheme).ignoresSafeArea())
             .safeAreaInset(edge: .bottom) {
                 footer
             }
@@ -61,7 +63,7 @@ struct PaywallView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(L10n.text("paywall.badge"))
                 .font(.system(size: 11, weight: .bold, design: .rounded))
-                .foregroundStyle(Color(hex: Theme.presets[4].primaryHex))
+                .foregroundStyle(Color(hex: accentHex))
                 .kerning(0.8)
 
             Text(L10n.text("paywall.title"))
@@ -97,12 +99,12 @@ struct PaywallView: View {
         HStack(alignment: .top, spacing: Theme.spacingM) {
             ZStack {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color(hex: Theme.presets[4].primaryHex).opacity(0.16))
+                    .fill(Color(hex: accentHex).opacity(0.16))
                     .frame(width: 42, height: 42)
 
                 Image(systemName: symbol)
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Color(hex: Theme.presets[4].primaryHex))
+                    .foregroundStyle(Color(hex: accentHex))
             }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -130,7 +132,7 @@ struct PaywallView: View {
 
     private var footer: some View {
         VStack(spacing: Theme.spacingXS) {
-            PrimaryButton(title: L10n.text("paywall.cta"), tintHex: Theme.presets[4].primaryHex) {
+            PrimaryButton(title: L10n.text("paywall.cta"), tintHex: accentHex) {
                 showLaunchAlert = true
             }
 
@@ -143,7 +145,7 @@ struct PaywallView: View {
 
             Button(L10n.text("paywall.secondary.restore")) {}
                 .font(.system(size: 15, weight: .semibold, design: .rounded))
-                .foregroundStyle(Color(hex: Theme.presets[4].primaryHex))
+                .foregroundStyle(Color(hex: accentHex))
                 .buttonStyle(.plain)
         }
         .padding(.horizontal, Theme.padding)

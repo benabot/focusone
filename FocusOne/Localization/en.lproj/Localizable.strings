@@ -4,7 +4,7 @@
 
 "notifications.body" = "Small step, big momentum.";
 
-"home.title" = "Today's focus";
+"home.title" = "Active routine";
 "home.no_habit" = "No active routine.";
 "home.today.done" = "Your day is validated.";
 "home.today.not_done" = "Validate today to extend the streak.";
@@ -15,14 +15,14 @@
 "home.best_streak" = "Best streak";
 "home.next_reminder.none" = "No reminder";
 "home.next_reminder.prefix" = "Next reminder • %@";
-"home.support.done" = "Your day is validated.";
+"home.support.done" = "Today's validation is saved.";
 "home.support.pending" = "Validate today to extend the streak.";
 "home.edit" = "Edit";
 "home.done.button.off" = "Validate today";
-"home.done.button.on" = "Day validated";
+"home.done.button.on" = "Already validated";
 "home.today.short" = "Today";
 "home.best.short" = "Record";
-"home.streak.label" = "Current streak";
+"home.streak.label" = "Active streak";
 "home.streak.unit.one" = "day";
 "home.streak.unit.other" = "days";
 "home.streak.keep_going" = "Validate today to extend the streak.";
@@ -49,23 +49,24 @@
 "intro.already_habit" = "I already have a habit";
 "intro.skip" = "Skip";
 
-"onboarding.title" = "Create your routine";
-"onboarding.subtitle" = "A name, an icon, a theme. That's enough.";
+"onboarding.title" = "Create routine";
+"onboarding.subtitle" = "Choose a name, an icon, and a theme.";
 "onboarding.subtitle_secondary" = "";
 "onboarding.configuration" = "Edit routine";
-"onboarding.edit_subtitle" = "Adjust the essentials.";
+"onboarding.edit_subtitle" = "Change the name, icon, or theme.";
 "onboarding.edit_subtitle_secondary" = "";
-"onboarding.habit_section" = "Name";
-"onboarding.name_placeholder" = "Display name";
+"onboarding.habit_section" = "Routine name";
+"onboarding.name_placeholder" = "e.g. Evening routine";
+"onboarding.preview_name_placeholder" = "Routine name";
 "onboarding.icon" = "Icon";
 "onboarding.theme" = "Theme";
-"onboarding.preferences" = "Settings";
+"onboarding.preferences" = "Reminders and day";
 "onboarding.reminders" = "Reminders";
 "onboarding.day_label" = "Day starts";
 "onboarding.manage" = "Edit";
-"onboarding.reminders.summary.none" = "None";
-"onboarding.reminders.summary.one" = "1";
-"onboarding.reminders.summary.many" = "%d";
+"onboarding.reminders.summary.none" = "No reminders";
+"onboarding.reminders.summary.one" = "1 reminder";
+"onboarding.reminders.summary.many" = "%d reminders";
 "onboarding.reminders.row" = "Reminders: %@";
 "onboarding.day_start.row" = "Day starts: %@";
 "onboarding.day_start" = "Day starts at";
@@ -75,7 +76,7 @@
 "onboarding.save" = "Save";
 "onboarding.cancel" = "Cancel";
 "onboarding.error.name_required" = "Add a name to continue.";
-"onboarding.error.no_active_habit" = "No active habit to edit.";
+"onboarding.error.no_active_habit" = "No active routine to edit.";
 
 "stats.title" = "Progress";
 "stats.current" = "Current streak";
@@ -96,6 +97,9 @@
 "settings.status.none" = "None";
 "settings.reminder" = "Reminder";
 "settings.reminders" = "Reminders";
+"settings.reminders.summary.none" = "No reminders";
+"settings.reminders.summary.one" = "1 reminder";
+"settings.reminders.summary.many" = "%d reminders";
 "settings.add_reminder" = "Add reminder";
 "settings.day_start" = "Day starts";
 "settings.theme" = "Theme";
@@ -106,22 +110,22 @@
 "settings.status.icloud.not_configured" = "Not configured";
 "settings.premium" = "Premium";
 "settings.premium.card.title" = "Unlock what comes next";
-"settings.premium.card.subtitle" = "Full history, advanced widgets, and archives in a richer version that stays calm.";
+"settings.premium.card.subtitle" = "Archives, full history, and advanced widgets, still with one active routine.";
 "settings.open_paywall" = "See Premium";
 
 "paywall.badge" = "PREMIUM";
 "paywall.title" = "Upgrade to FocusOne Premium";
-"paywall.subtitle" = "Unlock full history, richer widgets, and what's next for your routines.";
-"paywall.note" = "Still one active habit at a time.";
+"paywall.subtitle" = "Unlock full history, archives, advanced widgets, and what comes next.";
+"paywall.note" = "Still one active routine at a time.";
 "paywall.cta" = "Get launch updates";
-"paywall.benefit.habits.title" = "More habits";
-"paywall.benefit.habits.detail" = "Prepare the next ones while keeping only one active at a time.";
+"paywall.benefit.habits.title" = "Next routine";
+"paywall.benefit.habits.detail" = "When a routine is anchored, archive it and prepare the next one.";
 "paywall.benefit.history.title" = "Full history";
 "paywall.benefit.history.detail" = "Revisit your days beyond the last 30 days.";
 "paywall.benefit.widgets.title" = "Advanced widgets";
-"paywall.benefit.widgets.detail" = "Keep your routine and today's status visible on your Home Screen.";
+"paywall.benefit.widgets.detail" = "Keep the active routine, its streak, and today's status visible on your Home Screen.";
 "paywall.benefit.cycles.title" = "Archives and cycles";
-"paywall.benefit.cycles.detail" = "Close a routine, archive it, then move to the next.";
+"paywall.benefit.cycles.detail" = "Keep completed routines and move into the next one without losing the thread.";
 "paywall.secondary.later" = "Later";
 "paywall.secondary.restore" = "Restore purchases";
 "paywall.alert.title" = "Premium is coming soon";
