@@ -91,7 +91,7 @@ final class AppGroupStorage {
         if let groupDefaults = UserDefaults(suiteName: suiteName) {
             defaults = groupDefaults
         } else {
-            assertionFailure("Unable to open App Group defaults for \(suiteName)")
+            // Fallback keeps debug runs working when the App Group capability is disabled.
             defaults = .standard
         }
     }

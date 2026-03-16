@@ -17,8 +17,7 @@ struct AppRouter: View {
         Group {
             switch route {
             case .loading:
-                Color.clear
-                    .onAppear(perform: resolveRoute)
+                loadingView
 
             case .splash:
                 SplashView(
@@ -44,6 +43,31 @@ struct AppRouter: View {
         }
     }
 
+    private var loadingView: some View {
+        VStack(spacing: Theme.spacingS) {
+            ProgressView()
+                .controlSize(.large)
+
+            Text("Chargement...")
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .foregroundStyle(Theme.textSecondary(for: .light))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(
+            LinearGradient(
+                colors: [Color(hex: "FFE7D7"), Color(hex: "FFF7EE")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+        )
+        .onAppear {
+            guard route == .loading else { return }
+            resolveRoute()
+        }
+    }
+
+    @MainActor
     private func resolveRoute() {
         let hasHabit = HabitRepository(context: context).fetchActiveHabit() != nil
         if hasHabit {
