@@ -1,5 +1,4 @@
 "tab.home" = "Accueil";
-"tab.projects" = "Projets";
 "tab.stats" = "Stats";
 "tab.settings" = "Réglages";
 
@@ -24,9 +23,6 @@
 "home.streak.unit.one" = "jour";
 "home.streak.unit.other" = "jours";
 "home.streak.keep_going" = "Continue comme ça ! 🔥";
-"home.greeting.morning" = "Bonjour";
-"home.greeting.afternoon" = "Bon après-midi";
-"home.greeting.evening" = "Bonsoir";
 "home.streak.row.one" = "jour d'affilée";
 "home.streak.row.other" = "jours d'affilée";
 

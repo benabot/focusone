@@ -1,9 +1,9 @@
 import Foundation
 
 enum AppConfig {
-    static let bundleID = "com.benoit.focusone"
-    static let cloudKitContainerIdentifier = "iCloud.com.benoit.focusone"
-    static let appGroupID = "group.com.benoit.focusone"
+    static let bundleID = "fr.beabot"
+    static let cloudKitContainerIdentifier = "iCloud.fr.beabot"
+    static let appGroupID = "group.fr.beabot"
 }
 
 enum AppStorageKeys {

@@ -1,5 +1,4 @@
 "tab.home" = "Home";
-"tab.projects" = "Projects";
 "tab.stats" = "Stats";
 "tab.settings" = "Settings";
 
@@ -24,10 +23,6 @@
 "home.streak.unit.one" = "day";
 "home.streak.unit.other" = "days";
 "home.streak.keep_going" = "Keep it up! 🔥";
-"home.streak.on_fire" = "You're on fire! 🔥";
-"home.greeting.morning" = "Good morning";
-"home.greeting.afternoon" = "Good afternoon";
-"home.greeting.evening" = "Good evening";
 "home.streak.row.one" = "day in a row";
 "home.streak.row.other" = "days in a row";
 
@@ -78,8 +73,6 @@
 "stats.last30" = "30 days";
 "stats.best" = "Best";
 "stats.percent.format" = "%d%%";
-"stats.hero.subtitle" = "Your progress at a glance.";
-"stats.legend.done" = "Completed";
 
 "settings.title" = "Settings";
 "settings.notifications" = "Notifications";

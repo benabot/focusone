@@ -91,9 +91,7 @@ final class AppGroupStorage {
         if let groupDefaults = UserDefaults(suiteName: suiteName) {
             defaults = groupDefaults
         } else {
-            #if !DEBUG
             assertionFailure("Unable to open App Group defaults for \(suiteName)")
-            #endif
             defaults = .standard
         }
     }
