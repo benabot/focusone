@@ -181,7 +181,7 @@ final class SettingsViewModel: ObservableObject {
     }
 
     var premiumCardFootnote: String? {
-        let gate = PremiumGate()
+        let gate = PremiumGate(storeKitEntitlementState: nil) // trial text only, no StoreKit needed here
 
         switch premiumAccessState {
         case .trial:
@@ -213,8 +213,8 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
-    func refreshPremiumState() {
-        premiumAccessState = PremiumGate().accessState()
+    func refreshPremiumState(storeKitState: PremiumEntitlementState = .unknown) {
+        premiumAccessState = PremiumGate(storeKitEntitlementState: storeKitState).accessState()
     }
 
     func loadArchivedRoutines() {

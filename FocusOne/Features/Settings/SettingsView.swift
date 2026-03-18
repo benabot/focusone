@@ -59,8 +59,11 @@ struct SettingsView: View {
         .onChange(of: viewModel.selectedThemeHex) {
             Task { await viewModel.save() }
         }
+        .onChange(of: storeKit.entitlementState) { _, newState in
+            viewModel.refreshPremiumState(storeKitState: newState)
+        }
         .sheet(isPresented: $showPaywall, onDismiss: {
-            viewModel.refreshPremiumState()
+            viewModel.refreshPremiumState(storeKitState: storeKit.entitlementState)
         }) {
             PaywallView()
                 .environmentObject(storeKit)
@@ -314,7 +317,7 @@ struct SettingsView: View {
     private func debugButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button {
             action()
-            viewModel.refreshPremiumState()
+            viewModel.refreshPremiumState(storeKitState: storeKit.entitlementState)
             Task {
                 try? await Task.sleep(nanoseconds: 2_000_000_000)
                 await MainActor.run {
