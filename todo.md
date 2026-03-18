@@ -106,9 +106,13 @@
 - [x] onChange iOS 17 : signature à 2 paramètres corrigée dans AppRouter, StatsView, PaywallView.
 - [x] SettingsView debug panel : section #if DEBUG avec boutons trial actif / mi-trial / fin de trial / expiré / reset.
 - [x] L10n : ajout `paywall.error.title`, `paywall.product.yearly.badge` EN + FR.
+- [x] PaywallView : refonte structure (prix en haut, bénéfices en bas), YearlyProductCard + LifetimeProductCard, prix mensuel équivalent, CTA "Essai gratuit".
+- [x] PaywallView : wording revu — titre loss aversion, bénéfices orientés usage, dead keys supprimés (paywall.note, paywall.cta.waitlist, paywall.alert.*).
+- [x] PremiumLifecycleSheets : 3 angles distincts (découverte / urgence douce / perte+réouverture), prix visible dans le CTA, body centré sur 1 seul élément concret.
+- [x] L10n : `premium.prompt.trial.secondary.format` avec daysRemaining + date, toutes occurrences "lancement"/"waitlist" supprimées EN + FR.
+- [x] AppRouter : `highlightYearly: true` passé à PaywallView pour endingSoon et expired.
 
 ## Later
-- Revoir wording PaywallView et PremiumLifecycleSheets (voir prompts Claude Code dans skill.md).
-- Afficher prix mensuel équivalent sur la ProductCard annuelle (14,99 € = 1,25 €/mois).
-- Brancher `highlightYearly` dans PaywallView pour les sheets endingSoon et expired.
-- Wording : supprimer toutes les occurrences de "lancement" / "waitlist" dans les strings.
+- Tester les 3 lifecycle sheets en simulateur avec le debug panel (Settings > DEBUG).
+- Valider dark mode PaywallView après refonte wording.
+- Valider localization EN sur PaywallView et lifecycle sheets.
