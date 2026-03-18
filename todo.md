@@ -83,6 +83,13 @@
 - Test 0/1/2 reminders scheduling.
 - Note: local notifications are more reliable on real device than simulator.
 
+## StoreKit — test en simulateur
+- Dans Xcode : `Edit Scheme > Run > Options > StoreKit Configuration` → sélectionner `FocusOne.storekit`.
+- Sans cette étape, aucun achat ne fonctionne en simulateur.
+- Gérer les transactions sandbox : `Xcode > Debug > StoreKit > Manage Transactions`.
+- Depuis ce panneau : révoquer un abonnement, rembourser, expirer → `entitlementState` repasse à `.none`.
+- Pour tester trial expiré rapidement : utiliser le debug panel dans Settings (section DEBUG, visible uniquement en #if DEBUG).
+
 ## Fixed
 - [x] App apparaît 2x sur l'écran d'accueil : bundle ID Debug aligné sur Release (`com.benoit.focusone`). Widget idem.
 - [x] AppRouter refactorisé : routing simplifié, plus de double setState en `onAppear`.
@@ -91,6 +98,17 @@
 - [x] StatsView : streak cards colorées par thème, grille calendrier avec jours de la semaine, couleur preset.
 - [x] StatsViewModel : expose `themeHex` pour que StatsView adapte les couleurs.
 - [x] L10n : ajout `streakUnit`, `home.streak.label`, `home.streak.keep_going` EN + FR.
+- [x] StoreKitService : fetch produits, achat annuel + lifetime, restore, listener transactions, PremiumEntitlementState.
+- [x] PremiumGate : `hasPaidEntitlement` branché sur StoreKitService via injection, fallback UserDefaults pour debug.
+- [x] FocusOne.storekit : config sandbox locale — yearly 14,99 € avec trial 10j + lifetime 39,99 €.
+- [x] PaywallView : ProductCard avec vrais prix StoreKit, achat async, restore, dismiss auto si achat réussi.
+- [x] AppRouter + StatsView + SettingsView : `StoreKitService` injecté via environmentObject, PremiumGate branché.
+- [x] onChange iOS 17 : signature à 2 paramètres corrigée dans AppRouter, StatsView, PaywallView.
+- [x] SettingsView debug panel : section #if DEBUG avec boutons trial actif / mi-trial / fin de trial / expiré / reset.
+- [x] L10n : ajout `paywall.error.title`, `paywall.product.yearly.badge` EN + FR.
 
 ## Later
-- Keep `PremiumGate` as feature-flag layer and add StoreKit purchase flow.
+- Revoir wording PaywallView et PremiumLifecycleSheets (voir prompts Claude Code dans skill.md).
+- Afficher prix mensuel équivalent sur la ProductCard annuelle (14,99 € = 1,25 €/mois).
+- Brancher `highlightYearly` dans PaywallView pour les sheets endingSoon et expired.
+- Wording : supprimer toutes les occurrences de "lancement" / "waitlist" dans les strings.

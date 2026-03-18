@@ -52,14 +52,26 @@ enum PremiumPromptKind: String, Identifiable {
 struct PremiumGate {
     private let defaults: UserDefaults
     private let calendar: Calendar
+    /// Injected from StoreKitService. nil = not yet determined (treated as no entitlement).
+    var storeKitEntitlementState: PremiumEntitlementState?
 
-    init(defaults: UserDefaults = .standard, calendar: Calendar = .current) {
+    init(
+        defaults: UserDefaults = .standard,
+        calendar: Calendar = .current,
+        storeKitEntitlementState: PremiumEntitlementState? = nil
+    ) {
         self.defaults = defaults
         self.calendar = calendar
+        self.storeKitEntitlementState = storeKitEntitlementState
     }
 
+    /// True when StoreKit confirms an active entitlement.
+    /// Falls back to the legacy UserDefaults flag for debug / sandbox overrides.
     var hasPaidEntitlement: Bool {
-        defaults.bool(forKey: AppStorageKeys.isPremium)
+        if let state = storeKitEntitlementState {
+            return state == .active
+        }
+        return defaults.bool(forKey: AppStorageKeys.isPremium)
     }
 
     mutating func startTrialIfNeeded(now: Date = .now) {

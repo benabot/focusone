@@ -1,0 +1,75 @@
+{
+  "identifier" : "FocusOne",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "39.99",
+      "familySharable" : false,
+      "internalID" : "focusone_lifetime",
+      "localizations" : [
+        {
+          "description" : "Accès permanent à toutes les fonctionnalités premium.",
+          "displayName" : "FocusOne à vie",
+          "locale" : "fr_FR"
+        },
+        {
+          "description" : "Permanent access to all premium features.",
+          "displayName" : "FocusOne Lifetime",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.benoit.focusone.lifetime",
+      "referenceName" : "Lifetime",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_developerTeamID" : "",
+    "_storeKitErrors" : []
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "focusone_premium_group",
+      "localizations" : [
+        { "locale" : "fr_FR", "name" : "FocusOne Premium" },
+        { "locale" : "en_US", "name" : "FocusOne Premium" }
+      ],
+      "name" : "FocusOne Premium",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "14.99",
+          "familySharable" : false,
+          "groupNumber" : 1,
+          "internalID" : "focusone_yearly",
+          "introductoryOffer" : {
+            "displayPrice" : "0.00",
+            "duration" : "P10D",
+            "identifier" : "focusone_trial",
+            "mode" : "FreeTrial",
+            "offerID" : "focusone_trial"
+          },
+          "localizations" : [
+            {
+              "description" : "Accès illimité à toutes les fonctionnalités premium.",
+              "displayName" : "FocusOne Premium — Annuel",
+              "locale" : "fr_FR"
+            },
+            {
+              "description" : "Unlimited access to all premium features.",
+              "displayName" : "FocusOne Premium — Yearly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.benoit.focusone.premium.yearly",
+          "referenceName" : "Yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "subscriptionGroupID" : "focusone_premium_group",
+          "type" : "AutoRenewable"
+        }
+      ]
+    }
+  ],
+  "version" : { "major" : 3, "minor" : 0 }
+}

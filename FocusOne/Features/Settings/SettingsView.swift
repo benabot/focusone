@@ -4,7 +4,11 @@ import CoreData
 struct SettingsView: View {
     private let context: NSManagedObjectContext
     @StateObject private var viewModel: SettingsViewModel
+    @EnvironmentObject private var storeKit: StoreKitService
     @State private var showPaywall = false
+    #if DEBUG
+    @State private var debugConfirmation: String?
+    #endif
     @State private var showRemindersSheet = false
     @State private var showDayStartSheet = false
     @State private var showICloudSheet = false
@@ -33,6 +37,10 @@ struct SettingsView: View {
                     appearanceSection
                     syncSection
                     premiumSection
+
+                    #if DEBUG
+                    debugPremiumSection
+                    #endif
                 }
                 .padding(Theme.padding)
                 .padding(.bottom, 116)
@@ -55,6 +63,7 @@ struct SettingsView: View {
             viewModel.refreshPremiumState()
         }) {
             PaywallView()
+                .environmentObject(storeKit)
         }
         .sheet(isPresented: $showRemindersSheet) {
             SettingsRemindersSheet(viewModel: viewModel)
@@ -250,6 +259,96 @@ struct SettingsView: View {
         }
     }
 
+    // MARK: - Debug Premium Section
+
+    #if DEBUG
+    private var debugPremiumSection: some View {
+        VStack(alignment: .leading, spacing: Theme.spacingS) {
+            sectionTitle("DEBUG — Premium")
+
+            settingsPanel {
+                debugButton("Simuler trial actif (jour 1)") {
+                    setTrialStart(daysAgo: 0)
+                }
+
+                panelDivider
+
+                debugButton("Simuler mi-trial (jour 6)") {
+                    setTrialStart(daysAgo: 6)
+                }
+
+                panelDivider
+
+                debugButton("Simuler fin de trial (dernier jour)") {
+                    setTrialStart(daysAgo: 9)
+                }
+
+                panelDivider
+
+                debugButton("Simuler trial expiré") {
+                    setTrialStart(daysAgo: 11)
+                }
+
+                panelDivider
+
+                debugButton("Reset état premium") {
+                    let defaults = UserDefaults.standard
+                    defaults.removeObject(forKey: AppStorageKeys.premiumTrialStartedAt)
+                    defaults.removeObject(forKey: AppStorageKeys.isPremium)
+                    defaults.removeObject(forKey: AppStorageKeys.premiumPromptMidShownDay)
+                    defaults.removeObject(forKey: AppStorageKeys.premiumPromptEndingShownDay)
+                    defaults.removeObject(forKey: AppStorageKeys.premiumPromptExpiredShown)
+                    debugConfirmation = "État premium réinitialisé"
+                }
+            }
+
+            if let confirmation = debugConfirmation {
+                Text(confirmation)
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.green)
+                    .transition(.opacity)
+            }
+        }
+    }
+
+    private func debugButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button {
+            action()
+            viewModel.refreshPremiumState()
+            Task {
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                await MainActor.run {
+                    withAnimation { debugConfirmation = nil }
+                }
+            }
+        } label: {
+            HStack {
+                Text(title)
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundStyle(Theme.textPrimary(for: colorScheme))
+                Spacer()
+            }
+            .padding(.horizontal, Theme.spacingM)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func setTrialStart(daysAgo: Int) {
+        let defaults = UserDefaults.standard
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: calendar.date(byAdding: .day, value: -daysAgo, to: .now)!)
+        defaults.set(start.timeIntervalSince1970, forKey: AppStorageKeys.premiumTrialStartedAt)
+        defaults.removeObject(forKey: AppStorageKeys.premiumPromptMidShownDay)
+        defaults.removeObject(forKey: AppStorageKeys.premiumPromptEndingShownDay)
+        defaults.removeObject(forKey: AppStorageKeys.premiumPromptExpiredShown)
+
+        let remaining = max(0, 10 - daysAgo)
+        debugConfirmation = "Trial → jour \(daysAgo + 1)/10 (\(remaining)j restants)"
+    }
+    #endif
+
     private func navigationRow(title: String, value: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             SettingsValueRow(title: title, value: value) {
@@ -328,7 +427,7 @@ struct SettingsView: View {
     }
 
     private func openPremiumContext(_ feature: PremiumFeature) {
-        let gate = PremiumGate()
+        let gate = PremiumGate(storeKitEntitlementState: storeKit.entitlementState)
 
         guard gate.canAccess(feature) else {
             gateFeature = feature

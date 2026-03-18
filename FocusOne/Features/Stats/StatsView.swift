@@ -3,6 +3,7 @@ import CoreData
 
 struct StatsView: View {
     @StateObject private var viewModel: StatsViewModel
+    @EnvironmentObject private var storeKit: StoreKitService
     @Environment(\.colorScheme) private var colorScheme
     @State private var showPaywall = false
     @State private var showFullHistory = false
@@ -46,6 +47,7 @@ struct StatsView: View {
         .onAppear(perform: viewModel.load)
         .sheet(isPresented: $showPaywall) {
             PaywallView()
+                .environmentObject(storeKit)
         }
         .sheet(isPresented: $showFullHistory) {
             StatsFullHistorySheet(
@@ -218,8 +220,7 @@ struct StatsView: View {
     }
 
     private func openFullHistory() {
-        let gate = PremiumGate()
-
+        let gate = PremiumGate(storeKitEntitlementState: storeKit.entitlementState)
         if gate.canAccess(.fullHistory) {
             showFullHistory = true
         } else {
@@ -351,10 +352,10 @@ private struct StatsFullHistorySheet: View {
             }
         }
         .onAppear(perform: syncSelection)
-        .onChange(of: routines.map(\.id)) { _ in
+        .onChange(of: routines.map(\.id)) { _, _ in
             syncSelection()
         }
-        .onChange(of: selectedRoutineID) { _ in
+        .onChange(of: selectedRoutineID) { _, _ in
             selectedMonthIndex = 0
         }
     }
