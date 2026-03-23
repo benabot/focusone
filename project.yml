@@ -1,6 +1,5 @@
 name: FocusOne
 options:
-  bundleIdPrefix: fr.beabot
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
@@ -32,6 +31,7 @@ targets:
         SKIP_INSTALL: NO
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: 0.1.0
+        PRODUCT_BUNDLE_IDENTIFIER: fr.beabot.FocusOne
       configs:
         Debug:
           CODE_SIGN_ENTITLEMENTS: FocusOne/Resources/FocusOne.Debug.entitlements
@@ -61,6 +61,7 @@ targets:
         SKIP_INSTALL: YES
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: 0.1.0
+        PRODUCT_BUNDLE_IDENTIFIER: fr.beabot.FocusOne.widget
       configs:
         Debug:
           CODE_SIGN_ENTITLEMENTS: FocusOneWidget/FocusOneWidget.Debug.entitlements

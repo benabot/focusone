@@ -4,7 +4,11 @@ import CoreData
 struct SettingsView: View {
     private let context: NSManagedObjectContext
     @StateObject private var viewModel: SettingsViewModel
+    @EnvironmentObject private var storeKit: StoreKitService
     @State private var showPaywall = false
+    #if DEBUG
+    @State private var debugConfirmation: String?
+    #endif
     @State private var showRemindersSheet = false
     @State private var showDayStartSheet = false
     @State private var showICloudSheet = false
@@ -16,6 +20,10 @@ struct SettingsView: View {
     init(context: NSManagedObjectContext) {
         self.context = context
         _viewModel = StateObject(wrappedValue: SettingsViewModel(context: context))
+    }
+
+    private var customizationUnlocked: Bool {
+        PremiumGate(storeKitEntitlementState: storeKit.entitlementState).canAccess(.customization)
     }
 
     var body: some View {
@@ -33,12 +41,21 @@ struct SettingsView: View {
                     appearanceSection
                     syncSection
                     premiumSection
+
+                    #if DEBUG
+                    debugPremiumSection
+                    #endif
                 }
                 .padding(Theme.padding)
                 .padding(.bottom, 116)
             }
         }
-        .onAppear(perform: viewModel.load)
+        .onAppear {
+            viewModel.load(
+                allowPremiumThemes: customizationUnlocked,
+                storeKitState: storeKit.entitlementState
+            )
+        }
         .onChange(of: viewModel.notificationsEnabled) {
             Task { await viewModel.save() }
         }
@@ -51,10 +68,21 @@ struct SettingsView: View {
         .onChange(of: viewModel.selectedThemeHex) {
             Task { await viewModel.save() }
         }
+        .onChange(of: storeKit.entitlementState) { _ in
+            viewModel.refreshPremiumState(storeKitState: storeKit.entitlementState)
+            AppGroupStorage.shared.updateAdvancedWidgetsAccess(
+                PremiumGate(storeKitEntitlementState: storeKit.entitlementState).canAccess(.advancedWidgets)
+            )
+            viewModel.load(
+                allowPremiumThemes: customizationUnlocked,
+                storeKitState: storeKit.entitlementState
+            )
+        }
         .sheet(isPresented: $showPaywall, onDismiss: {
-            viewModel.refreshPremiumState()
+            viewModel.refreshPremiumState(storeKitState: storeKit.entitlementState)
         }) {
             PaywallView()
+                .environmentObject(storeKit)
         }
         .sheet(isPresented: $showRemindersSheet) {
             SettingsRemindersSheet(viewModel: viewModel)
@@ -151,35 +179,22 @@ struct SettingsView: View {
 
                 panelDivider
 
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: Theme.spacingS) {
-                        ForEach(Theme.presets) { preset in
-                            let isSelected = viewModel.selectedThemeHex == preset.primaryHex
+                ThemePalettePicker(
+                    selectedHex: viewModel.selectedThemeHex,
+                    canAccessPremiumThemes: customizationUnlocked
+                ) { hex in
+                    viewModel.selectedThemeHex = hex
+                } onLockedTap: {
+                    showPaywall = true
+                }
 
-                            Button {
-                                viewModel.selectedThemeHex = preset.primaryHex
-                            } label: {
-                                Circle()
-                                    .fill(preset.color)
-                                    .frame(width: 36, height: 36)
-                                    .overlay {
-                                        Circle()
-                                            .stroke(.white, lineWidth: isSelected ? 2 : 0)
-                                    }
-                                    .overlay {
-                                        if isSelected {
-                                            Image(systemName: "checkmark")
-                                                .font(.system(size: 11, weight: .bold))
-                                                .foregroundStyle(.white)
-                                        }
-                                    }
-                                    .frame(width: 44, height: 44)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(L10n.text(preset.nameKey))
-                        }
-                    }
-                    .padding(.horizontal, Theme.spacingM)
+                if !customizationUnlocked {
+                    panelDivider
+
+                    SettingsValueRow(
+                        title: L10n.text("settings.theme.premium_note"),
+                        value: L10n.text("settings.theme.free_palette")
+                    )
                 }
             }
         }
@@ -249,6 +264,104 @@ struct SettingsView: View {
             )
         }
     }
+
+    #if DEBUG
+    private var debugPremiumSection: some View {
+        VStack(alignment: .leading, spacing: Theme.spacingS) {
+            sectionTitle("DEBUG - Premium")
+
+            settingsPanel {
+                debugButton("Simulate trial day 1") {
+                    setTrialStart(daysAgo: 0)
+                }
+
+                panelDivider
+
+                debugButton("Simulate trial day 6") {
+                    setTrialStart(daysAgo: 6)
+                }
+
+                panelDivider
+
+                debugButton("Simulate last trial day") {
+                    setTrialStart(daysAgo: 9)
+                }
+
+                panelDivider
+
+                debugButton("Simulate expired trial") {
+                    setTrialStart(daysAgo: 11)
+                }
+
+                panelDivider
+
+                debugButton("Reset premium state") {
+                    let defaults = UserDefaults.standard
+                    defaults.removeObject(forKey: AppStorageKeys.premiumTrialStartedAt)
+                    defaults.removeObject(forKey: AppStorageKeys.isPremium)
+                    defaults.removeObject(forKey: AppStorageKeys.premiumPromptMidShownDay)
+                    defaults.removeObject(forKey: AppStorageKeys.premiumPromptEndingShownDay)
+                    defaults.removeObject(forKey: AppStorageKeys.premiumPromptExpiredShown)
+                    debugConfirmation = "Premium state reset"
+                }
+            }
+
+            if let debugConfirmation {
+                Text(debugConfirmation)
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.green)
+                    .transition(.opacity)
+            }
+        }
+    }
+
+    private func debugButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button {
+            action()
+            viewModel.refreshPremiumState(storeKitState: storeKit.entitlementState)
+            AppGroupStorage.shared.updateAdvancedWidgetsAccess(
+                PremiumGate(storeKitEntitlementState: storeKit.entitlementState).canAccess(.advancedWidgets)
+            )
+
+            Task {
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                await MainActor.run {
+                    withAnimation {
+                        debugConfirmation = nil
+                    }
+                }
+            }
+        } label: {
+            HStack {
+                Text(title)
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundStyle(Theme.textPrimary(for: colorScheme))
+
+                Spacer()
+            }
+            .padding(.horizontal, Theme.spacingM)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func setTrialStart(daysAgo: Int) {
+        let defaults = UserDefaults.standard
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(
+            for: calendar.date(byAdding: .day, value: -daysAgo, to: .now) ?? .now
+        )
+
+        defaults.set(start.timeIntervalSince1970, forKey: AppStorageKeys.premiumTrialStartedAt)
+        defaults.removeObject(forKey: AppStorageKeys.premiumPromptMidShownDay)
+        defaults.removeObject(forKey: AppStorageKeys.premiumPromptEndingShownDay)
+        defaults.removeObject(forKey: AppStorageKeys.premiumPromptExpiredShown)
+
+        let remaining = max(0, 10 - daysAgo)
+        debugConfirmation = "Trial -> day \(daysAgo + 1)/10 (\(remaining)d left)"
+    }
+    #endif
 
     private func navigationRow(title: String, value: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -328,7 +441,7 @@ struct SettingsView: View {
     }
 
     private func openPremiumContext(_ feature: PremiumFeature) {
-        let gate = PremiumGate()
+        let gate = PremiumGate(storeKitEntitlementState: storeKit.entitlementState)
 
         guard gate.canAccess(feature) else {
             gateFeature = feature
@@ -342,7 +455,7 @@ struct SettingsView: View {
         case .nextRoutine:
             viewModel.loadUpcomingRoutines()
             showUpcomingRoutinesSheet = true
-        case .fullHistory, .advancedWidgets:
+        case .advancedStats, .fullHistory, .advancedWidgets, .customization:
             showPaywall = true
         }
     }
@@ -872,5 +985,6 @@ private struct SettingsDayStartSheet: View {
 struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         SettingsView(context: PreviewSupport.context)
+            .environmentObject(StoreKitService())
     }
 }

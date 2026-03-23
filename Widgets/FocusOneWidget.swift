@@ -62,6 +62,10 @@ struct FocusOneWidgetEntryView: View {
         entry.snapshot.doneToday ? L10n.text("widget.support.done") : L10n.text("widget.support.pending")
     }
 
+    private var advancedWidgetsEnabled: Bool {
+        entry.snapshot.advancedWidgetsEnabled
+    }
+
     private var streakValue: String {
         "\(entry.snapshot.currentStreak)"
     }
@@ -76,10 +80,10 @@ struct FocusOneWidgetEntryView: View {
             smallWidget
                 .containerBackground(for: .widget) { widgetBackground }
         case .systemMedium:
-            mediumWidget
+            (advancedWidgetsEnabled ? AnyView(mediumWidget) : AnyView(lockedMediumWidget))
                 .containerBackground(for: .widget) { widgetBackground }
         case .systemLarge:
-            largeWidget
+            (advancedWidgetsEnabled ? AnyView(largeWidget) : AnyView(lockedLargeWidget))
                 .containerBackground(for: .widget) { widgetBackground }
         case .accessoryCircular:
             circularAccessory
@@ -178,6 +182,42 @@ struct FocusOneWidgetEntryView: View {
         .padding(16)
     }
 
+    private var lockedMediumWidget: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
+                widgetOverline(L10n.text("widget.locked.overline"))
+
+                Text(L10n.text("widget.locked.title"))
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(palette.primaryText)
+
+                Text(L10n.text("widget.locked.message"))
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundStyle(palette.secondaryText)
+                    .lineLimit(3)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .padding(16)
+            .background(panelBackground(strength: .surface))
+
+            VStack(spacing: 10) {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(palette.accent)
+
+                Text(L10n.text("widget.locked.badge"))
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(palette.secondaryText)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(width: 110)
+            .frame(maxHeight: .infinity)
+            .padding(14)
+            .background(panelBackground(strength: .accent))
+        }
+        .padding(16)
+    }
+
     private var largeWidget: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 12) {
@@ -231,6 +271,43 @@ struct FocusOneWidgetEntryView: View {
                 }
                 .frame(width: 170)
             }
+        }
+        .padding(18)
+    }
+
+    private var lockedLargeWidget: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            widgetOverline(L10n.text("widget.locked.overline"))
+
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .fill(palette.accent.opacity(0.16))
+                        .frame(width: 84, height: 84)
+
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 32, weight: .bold))
+                        .foregroundStyle(palette.accent)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(L10n.text("widget.locked.title"))
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundStyle(palette.primaryText)
+
+                    Text(L10n.text("widget.locked.message"))
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .foregroundStyle(palette.secondaryText)
+                        .lineLimit(4)
+                }
+            }
+            .padding(18)
+            .background(panelBackground(strength: .surface))
+
+            Text(L10n.text("widget.locked.footer"))
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .foregroundStyle(palette.secondaryText)
+                .padding(.horizontal, 4)
         }
         .padding(18)
     }

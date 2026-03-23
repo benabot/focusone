@@ -22,9 +22,37 @@ enum Theme {
         ThemePreset(id: "forest", nameKey: "theme.forest", primaryHex: "48A16C", softHex: "CFE7D7")
     ]
 
-    static let defaultThemeHex = presets[0].primaryHex
+    static let freeThemeCount = PremiumConfig.freeThemeCount
+    static let defaultThemeHex = freePresets.first?.primaryHex ?? presets[0].primaryHex
     static let accent = Color(hex: "FF8A5B")
     static let backgroundTint = Color(hex: "FFF5EC")
+
+    static var freePresets: [ThemePreset] {
+        Array(presets.prefix(freeThemeCount))
+    }
+
+    static var premiumPresets: [ThemePreset] {
+        Array(presets.dropFirst(freeThemeCount))
+    }
+
+    static func accessiblePresets(canAccessPremiumThemes: Bool) -> [ThemePreset] {
+        canAccessPremiumThemes ? presets : freePresets
+    }
+
+    static func isPremiumPreset(_ hex: String) -> Bool {
+        premiumPresets.contains(where: { $0.primaryHex == hex })
+    }
+
+    static func effectiveThemeHex(for hex: String, canAccessPremiumThemes: Bool) -> String {
+        guard canAccessPremiumThemes || !isPremiumPreset(hex) else {
+            return defaultThemeHex
+        }
+        return hex
+    }
+
+    static func effectivePreset(for hex: String, canAccessPremiumThemes: Bool) -> ThemePreset {
+        preset(for: effectiveThemeHex(for: hex, canAccessPremiumThemes: canAccessPremiumThemes))
+    }
 
     // Core design tokens used across the redesigned surfaces.
     static let cornerRadiusLarge: CGFloat = 24

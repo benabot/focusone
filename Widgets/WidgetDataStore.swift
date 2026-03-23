@@ -33,6 +33,7 @@ struct WidgetDataSnapshot: Codable {
     var currentStreak: Int
     var doneToday: Bool
     var themeHex: String
+    var advancedWidgetsEnabled: Bool
 
     private enum CodingKeys: String, CodingKey {
         case habitName
@@ -42,6 +43,7 @@ struct WidgetDataSnapshot: Codable {
         case currentStreak
         case doneToday
         case themeHex
+        case advancedWidgetsEnabled
     }
 
     init(
@@ -49,13 +51,15 @@ struct WidgetDataSnapshot: Codable {
         iconSymbol: String,
         currentStreak: Int,
         doneToday: Bool,
-        themeHex: String
+        themeHex: String,
+        advancedWidgetsEnabled: Bool = true
     ) {
         self.habitName = habitName
         self.iconSymbol = WidgetIconSymbol.normalize(iconSymbol)
         self.currentStreak = currentStreak
         self.doneToday = doneToday
         self.themeHex = themeHex
+        self.advancedWidgetsEnabled = advancedWidgetsEnabled
     }
 
     init(from decoder: Decoder) throws {
@@ -70,6 +74,7 @@ struct WidgetDataSnapshot: Codable {
             ?? 0
         doneToday = try container.decode(Bool.self, forKey: .doneToday)
         themeHex = try container.decodeIfPresent(String.self, forKey: .themeHex) ?? "34C9A5"
+        advancedWidgetsEnabled = try container.decodeIfPresent(Bool.self, forKey: .advancedWidgetsEnabled) ?? true
     }
 
     func encode(to encoder: Encoder) throws {
@@ -79,6 +84,7 @@ struct WidgetDataSnapshot: Codable {
         try container.encode(currentStreak, forKey: .currentStreak)
         try container.encode(doneToday, forKey: .doneToday)
         try container.encode(themeHex, forKey: .themeHex)
+        try container.encode(advancedWidgetsEnabled, forKey: .advancedWidgetsEnabled)
     }
 }
 
@@ -117,6 +123,12 @@ final class AppGroupStorage {
         WidgetCenter.shared.reloadAllTimelines()
         #endif
     }
+
+    func updateAdvancedWidgetsAccess(_ isEnabled: Bool) {
+        guard var snapshot = loadWidgetSnapshot() else { return }
+        snapshot.advancedWidgetsEnabled = isEnabled
+        saveWidgetSnapshot(snapshot)
+    }
 }
 
 // Backward-compatibility names used by earlier code.
@@ -137,5 +149,9 @@ final class WidgetDataStore {
 
     func clear() {
         AppGroupStorage.shared.clearWidgetSnapshot()
+    }
+
+    func updateAdvancedWidgetsAccess(_ isEnabled: Bool) {
+        AppGroupStorage.shared.updateAdvancedWidgetsAccess(isEnabled)
     }
 }

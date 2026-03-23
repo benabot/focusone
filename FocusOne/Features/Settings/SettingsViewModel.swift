@@ -44,11 +44,15 @@ final class SettingsViewModel: ObservableObject {
         self.iCloudStatus = L10n.text("settings.icloud.placeholder")
     }
 
-    func load() {
+    func load(
+        allowPremiumThemes: Bool = PremiumGate().canAccess(.customization),
+        storeKitState: PremiumEntitlementState = .unknown
+    ) {
+        let allowPremiumIcons = PremiumGate(storeKitEntitlementState: storeKitState).canAccess(.customization)
         refreshICloudStatus()
-        refreshPremiumState()
-        loadArchivedRoutines()
-        loadUpcomingRoutines()
+        refreshPremiumState(storeKitState: storeKitState)
+        loadArchivedRoutines(allowPremiumIcons: allowPremiumIcons)
+        loadUpcomingRoutines(allowPremiumIcons: allowPremiumIcons)
 
         let repository = HabitRepository(context: context)
         guard let active = repository.fetchActiveHabit() else {
@@ -60,8 +64,38 @@ final class SettingsViewModel: ObservableObject {
         }
 
         activeHabitEntity = active
+        var habit = active.toDomain()
+        let effectiveIconSymbol = HabitIcon.effectiveSymbol(
+            for: habit.iconSymbol,
+            canAccessPremiumIcons: allowPremiumIcons
+        )
+        let effectiveThemeHex = Theme.effectiveThemeHex(
+            for: active.colorHex,
+            canAccessPremiumThemes: allowPremiumThemes
+        )
+        let effectiveCommitmentDays = CommitmentDurationOption.effectiveDurationDays(
+            for: habit.commitmentDurationDays,
+            canAccessPremiumDuration: allowPremiumIcons
+        )
+
+        if effectiveThemeHex != habit.colorHex ||
+            effectiveIconSymbol != habit.iconSymbol ||
+            effectiveCommitmentDays != habit.commitmentDurationDays {
+            let clearsCommitmentDuration = effectiveCommitmentDays == nil && habit.commitmentDurationDays != nil
+            repository.updateHabit(
+                active,
+                iconSymbol: effectiveIconSymbol,
+                colorHex: effectiveThemeHex,
+                commitmentDurationDays: effectiveCommitmentDays,
+                clearsCommitmentDuration: clearsCommitmentDuration
+            )
+            habit.colorHex = effectiveThemeHex
+            habit.iconSymbol = effectiveIconSymbol
+            habit.commitmentDurationDays = effectiveCommitmentDays
+        }
+
         dayStartHour = Int(active.dayStartHour)
-        selectedThemeHex = active.colorHex
+        selectedThemeHex = habit.colorHex
 
         reminderTimes = ReminderTimesCodec.decode(active.reminderTimes).compactMap {
             Calendar.current.date(bySettingHour: $0.hour, minute: $0.minute, second: 0, of: Date())
@@ -117,7 +151,8 @@ final class SettingsViewModel: ObservableObject {
                 iconSymbol: habit.iconSymbol,
                 currentStreak: streak,
                 doneToday: doneToday,
-                themeHex: habit.colorHex
+                themeHex: habit.colorHex,
+                advancedWidgetsEnabled: PremiumGate().canAccess(.advancedWidgets)
             )
         )
     }
@@ -189,7 +224,7 @@ final class SettingsViewModel: ObservableObject {
         case .premium:
             return L10n.text("premium.state.active")
         case .free:
-            return nil
+            return L10n.text("settings.premium.offer")
         }
     }
 
@@ -213,14 +248,22 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
-    func refreshPremiumState() {
-        premiumAccessState = PremiumGate().accessState()
+    func refreshPremiumState(storeKitState: PremiumEntitlementState = .unknown) {
+        premiumAccessState = PremiumGate(storeKitEntitlementState: storeKitState).accessState()
+        clampSelectedThemeIfNeeded(
+            allowPremiumThemes: PremiumGate(storeKitEntitlementState: storeKitState).canAccess(.customization)
+        )
     }
 
-    func loadArchivedRoutines() {
+    func loadArchivedRoutines(allowPremiumIcons: Bool? = nil) {
         let repository = HabitRepository(context: context)
+        let canAccessPremiumIcons: Bool = allowPremiumIcons ?? (premiumAccessState != .free)
         archivedRoutines = repository.fetchArchivedHabits().map { entity in
             let habit = entity.toDomain()
+            let iconSymbol = HabitIcon.effectiveSymbol(
+                for: habit.iconSymbol,
+                canAccessPremiumIcons: canAccessPremiumIcons
+            )
             let completions = repository.fetchCompletions(habitId: habit.id)
             let bestStreak = streakEngine.bestStreak(habit: habit, completions: completions)
             let endDate = repository.latestCycleEndDate(habitId: habit.id)
@@ -240,7 +283,7 @@ final class SettingsViewModel: ObservableObject {
             return ArchivedRoutineSummary(
                 id: habit.id,
                 name: habit.name,
-                iconSymbol: habit.iconSymbol,
+                iconSymbol: iconSymbol,
                 colorHex: habit.colorHex,
                 periodText: periodText,
                 detailsText: "\(recordText) • \(completionCountText(completions.count))"
@@ -248,15 +291,20 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
-    func loadUpcomingRoutines() {
+    func loadUpcomingRoutines(allowPremiumIcons: Bool? = nil) {
         let repository = HabitRepository(context: context)
+        let canAccessPremiumIcons: Bool = allowPremiumIcons ?? (premiumAccessState != .free)
         upcomingRoutines = repository.fetchUpcomingHabits().map { entity in
             let habit = entity.toDomain()
+            let iconSymbol = HabitIcon.effectiveSymbol(
+                for: habit.iconSymbol,
+                canAccessPremiumIcons: canAccessPremiumIcons
+            )
 
             return UpcomingRoutineSummary(
                 id: habit.id,
                 name: habit.name,
-                iconSymbol: habit.iconSymbol,
+                iconSymbol: iconSymbol,
                 colorHex: habit.colorHex,
                 remindersText: String.localizedStringWithFormat(
                     L10n.text("onboarding.reminders.row"),
@@ -278,6 +326,11 @@ final class SettingsViewModel: ObservableObject {
 
         let habit = activated.toDomain()
         activeHabitEntity = activated
+        let canAccessPremiumIcons = premiumAccessState != .free
+        let iconSymbol = HabitIcon.effectiveSymbol(
+            for: habit.iconSymbol,
+            canAccessPremiumIcons: canAccessPremiumIcons
+        )
 
         if notificationsEnabled {
             _ = await notificationsService.requestPermission()
@@ -293,15 +346,25 @@ final class SettingsViewModel: ObservableObject {
         AppGroupStorage.shared.saveWidgetSnapshot(
             WidgetDataSnapshot(
                 habitName: habit.name,
-                iconSymbol: habit.iconSymbol,
+                iconSymbol: iconSymbol,
                 currentStreak: streak,
                 doneToday: doneToday,
-                themeHex: habit.colorHex
+                themeHex: habit.colorHex,
+                advancedWidgetsEnabled: PremiumGate().canAccess(.advancedWidgets)
             )
         )
 
         load()
         return true
+    }
+
+    private func clampSelectedThemeIfNeeded(allowPremiumThemes: Bool) {
+        let normalized = Theme.effectiveThemeHex(
+            for: selectedThemeHex,
+            canAccessPremiumThemes: allowPremiumThemes
+        )
+        guard normalized != selectedThemeHex else { return }
+        selectedThemeHex = normalized
     }
 
     private func refreshICloudStatus() {

@@ -1,6 +1,6 @@
 #include "Base.xcconfig"
 
-PRODUCT_BUNDLE_IDENTIFIER = fr.beabot
+PRODUCT_BUNDLE_IDENTIFIER = fr.beabot.FocusOne
 CODE_SIGN_STYLE = Automatic
 // DEVELOPMENT_TEAM = XXXXXXXXXX  ← Xcode will fill this automatically
 DEBUG_INFORMATION_FORMAT = dwarf

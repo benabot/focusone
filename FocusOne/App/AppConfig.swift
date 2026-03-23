@@ -1,9 +1,18 @@
 import Foundation
 
 enum AppConfig {
-    static let bundleID = "fr.beabot"
-    static let cloudKitContainerIdentifier = "iCloud.fr.beabot"
-    static let appGroupID = "group.fr.beabot"
+    static let appBundleID = "fr.beabot.FocusOne"
+    static let widgetBundleID = "fr.beabot.FocusOne.widget"
+    static let appGroupID = "group.fr.beabot.FocusOne"
+    static let cloudKitContainerIdentifier = "iCloud.fr.beabot.FocusOne"
+}
+
+enum PremiumConfig {
+    static let yearlyProductID = "com.benoit.focusone.premium.yearly"
+    static let lifetimeProductID = "com.benoit.focusone.lifetime"
+    static let productIDs = [yearlyProductID, lifetimeProductID]
+
+    static let freeThemeCount = 4
 }
 
 enum AppStorageKeys {

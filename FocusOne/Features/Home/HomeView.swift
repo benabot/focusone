@@ -3,8 +3,10 @@ import CoreData
 
 struct HomeView: View {
     @StateObject private var viewModel: HomeViewModel
+    @EnvironmentObject private var storeKit: StoreKitService
     @Environment(\.colorScheme) private var colorScheme
     @State private var showEditConfiguration = false
+    @State private var showUpcomingRoutineCreation = false
     private let context: NSManagedObjectContext
 
     init(context: NSManagedObjectContext) {
@@ -13,7 +15,11 @@ struct HomeView: View {
     }
 
     var body: some View {
-        let preset = Theme.preset(for: viewModel.habit?.colorHex ?? Theme.defaultThemeHex)
+        let customizationUnlocked = PremiumGate(storeKitEntitlementState: storeKit.entitlementState).canAccess(.customization)
+        let preset = Theme.effectivePreset(
+            for: viewModel.themeHex ?? Theme.defaultThemeHex,
+            canAccessPremiumThemes: customizationUnlocked
+        )
 
         ZStack(alignment: .top) {
             Theme.backgroundGradient(for: preset, scheme: colorScheme)
@@ -23,6 +29,9 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     if let habit = viewModel.habit {
                         topBar(habit: habit, preset: preset)
+                        if let commitmentState = viewModel.commitmentCompletionState {
+                            commitmentCompletionCard(state: commitmentState)
+                        }
                         heroCard(habit: habit, preset: preset)
                     } else {
                         emptyState
@@ -33,17 +42,40 @@ struct HomeView: View {
                 .padding(.bottom, 40)
             }
         }
-        .onAppear(perform: viewModel.load)
-        .sheet(isPresented: $showEditConfiguration, onDismiss: viewModel.load) {
+        .onAppear {
+            viewModel.load(allowPremiumThemes: customizationUnlocked)
+        }
+        .onChange(of: storeKit.entitlementState) { _ in
+            viewModel.load(allowPremiumThemes: customizationUnlocked)
+        }
+        .sheet(isPresented: $showEditConfiguration, onDismiss: {
+            viewModel.load(allowPremiumThemes: customizationUnlocked)
+        }) {
             OnboardingView(
                 context: context,
                 mode: .edit,
                 onFinished: {
                     showEditConfiguration = false
-                    viewModel.load()
+                    viewModel.load(allowPremiumThemes: customizationUnlocked)
                 },
                 onCancel: {
                     showEditConfiguration = false
+                }
+            )
+            .presentationDetents([.large])
+        }
+        .sheet(isPresented: $showUpcomingRoutineCreation, onDismiss: {
+            viewModel.load(allowPremiumThemes: customizationUnlocked)
+        }) {
+            OnboardingView(
+                context: context,
+                mode: .upcoming,
+                onFinished: {
+                    showUpcomingRoutineCreation = false
+                    viewModel.load(allowPremiumThemes: customizationUnlocked)
+                },
+                onCancel: {
+                    showUpcomingRoutineCreation = false
                 }
             )
             .presentationDetents([.large])
@@ -112,6 +144,29 @@ struct HomeView: View {
         }
     }
 
+    private func commitmentCompletionCard(state: CommitmentCompletionState) -> some View {
+        CommitmentCompletionBanner(
+            accentHex: Theme.presets[3].primaryHex,
+            title: viewModel.commitmentCompletedTitle,
+            message: String.localizedStringWithFormat(
+                L10n.text("home.commitment.completed.message"),
+                state.durationLabel
+            ),
+            archiveTitle: viewModel.commitmentCompletedArchiveTitle,
+            continueTitle: viewModel.commitmentCompletedContinueTitle,
+            nextTitle: viewModel.commitmentCompletedNextTitle,
+            archiveAction: {
+                viewModel.archiveCurrentHabit()
+            },
+            continueAction: {
+                viewModel.continueWithoutCommitment()
+            },
+            nextAction: {
+                showUpcomingRoutineCreation = true
+            }
+        )
+    }
+
     // MARK: — Empty state
 
     private var emptyState: some View {
@@ -132,6 +187,7 @@ struct HomeView: View {
 struct HomeView_Previews: PreviewProvider {
     static var previews: some View {
         HomeView(context: PreviewSupport.context)
+            .environmentObject(StoreKitService())
     }
 }
 
@@ -304,5 +360,63 @@ private struct HomeHeroCard: View {
     private var cardOutline: some View {
         RoundedRectangle(cornerRadius: 30, style: .continuous)
             .stroke(Color(hex: accentHex).opacity(colorScheme == .dark ? 0.2 : 0.14), lineWidth: 1)
+    }
+}
+
+private struct CommitmentCompletionBanner: View {
+    let accentHex: String
+    let title: String
+    let message: String
+    let archiveTitle: String
+    let continueTitle: String
+    let nextTitle: String
+    let archiveAction: () -> Void
+    let continueAction: () -> Void
+    let nextAction: () -> Void
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "calendar.badge.checkmark")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Color(hex: accentHex))
+                    .frame(width: 34, height: 34)
+                    .background(
+                        Circle()
+                            .fill(Color(hex: accentHex).opacity(colorScheme == .dark ? 0.18 : 0.12))
+                    )
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .foregroundStyle(Theme.textPrimary(for: colorScheme))
+
+                    Text(message)
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .foregroundStyle(Theme.textSecondary(for: colorScheme))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            HStack(spacing: 10) {
+                Button(archiveTitle, action: archiveAction)
+                Button(continueTitle, action: continueAction)
+                Button(nextTitle, action: nextAction)
+            }
+            .font(.system(size: 13, weight: .semibold, design: .rounded))
+            .buttonStyle(.plain)
+            .foregroundStyle(Color(hex: accentHex))
+        }
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color.white.opacity(colorScheme == .dark ? 0.12 : 0.68))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color(hex: accentHex).opacity(colorScheme == .dark ? 0.16 : 0.10), lineWidth: 1)
+        )
     }
 }

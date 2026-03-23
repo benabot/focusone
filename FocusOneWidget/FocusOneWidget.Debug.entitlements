@@ -3,6 +3,7 @@
   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!-- App Groups désactivé pour Personal Team -->
+    <!-- Personal Team: App Groups are not provisioned locally. -->
+    <!-- Widget snapshot sharing falls back to local defaults in Debug. -->
 </dict>
 </plist>

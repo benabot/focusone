@@ -26,6 +26,7 @@ struct Habit: Identifiable, Equatable {
     var dayStartHour: Int
     var reminderTimes: [ReminderTime]
     var lifecycleState: HabitLifecycleState
+    var commitmentDurationDays: Int?
 
     var isActive: Bool {
         lifecycleState == .active
@@ -34,11 +35,20 @@ struct Habit: Identifiable, Equatable {
     var isUpcoming: Bool {
         lifecycleState == .upcoming
     }
+
+    var commitmentEndDate: Date? {
+        guard let commitmentDurationDays else { return nil }
+        return Calendar.current.date(byAdding: .day, value: commitmentDurationDays, to: startDate)
+    }
+
+    var hasCommitment: Bool {
+        commitmentDurationDays != nil
+    }
 }
 
 enum HabitIcon {
     static let defaultSymbol = "sparkles"
-    static let availableSymbols = [
+    static let freeSymbols = [
         "person.crop.circle.fill",
         "timer",
         "sun.max.fill",
@@ -51,6 +61,29 @@ enum HabitIcon {
         "heart.fill"
     ]
 
+    static let premiumSymbols = [
+        "flame.fill",
+        "leaf.fill",
+        "bolt.fill",
+        "star.circle.fill",
+        "wand.and.stars",
+        "target",
+        "chart.line.uptrend.xyaxis",
+        "medal.fill"
+    ]
+
+    static var availableSymbols: [String] {
+        freeSymbols + premiumSymbols
+    }
+
+    static var allSymbols: [String] {
+        availableSymbols
+    }
+
+    static var freeCount: Int {
+        freeSymbols.count
+    }
+
     static func normalize(_ rawValue: String?) -> String {
         guard let rawValue, !rawValue.isEmpty else { return defaultSymbol }
 
@@ -60,6 +93,60 @@ enum HabitIcon {
 
         guard availableSymbols.contains(rawValue) else { return defaultSymbol }
         return rawValue
+    }
+
+    static func isPremiumSymbol(_ symbol: String) -> Bool {
+        premiumSymbols.contains(symbol)
+    }
+
+    static func accessibleSymbols(canAccessPremiumIcons: Bool) -> [String] {
+        canAccessPremiumIcons ? availableSymbols : freeSymbols
+    }
+
+    static func effectiveSymbol(for symbol: String, canAccessPremiumIcons: Bool) -> String {
+        guard canAccessPremiumIcons || !isPremiumSymbol(symbol) else {
+            return defaultSymbol
+        }
+        return normalize(symbol)
+    }
+}
+
+enum CommitmentDurationOption: Int, CaseIterable, Identifiable {
+    case none = 0
+    case seven = 7
+    case ten = 10
+    case fifteen = 15
+    case thirty = 30
+
+    var id: Int { rawValue }
+
+    var isPremium: Bool {
+        self != .none
+    }
+
+    var durationDays: Int? {
+        self == .none ? nil : rawValue
+    }
+
+    var titleKey: String {
+        switch self {
+        case .none: return "commitment.duration.none"
+        case .seven: return "commitment.duration.7"
+        case .ten: return "commitment.duration.10"
+        case .fifteen: return "commitment.duration.15"
+        case .thirty: return "commitment.duration.30"
+        }
+    }
+
+    static func option(for durationDays: Int?) -> CommitmentDurationOption {
+        guard let durationDays else { return .none }
+        return Self(rawValue: durationDays) ?? .none
+    }
+
+    static func effectiveDurationDays(for durationDays: Int?, canAccessPremiumDuration: Bool) -> Int? {
+        guard canAccessPremiumDuration else { return nil }
+        guard let durationDays, Self(rawValue: durationDays) != nil else { return nil }
+        return durationDays
     }
 }
 

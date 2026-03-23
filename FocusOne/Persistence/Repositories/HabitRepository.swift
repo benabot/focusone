@@ -79,6 +79,7 @@ final class HabitRepository {
                      colorHex: String,
                      dayStartHour: Int,
                      reminderTimes: [ReminderTime],
+                     commitmentDurationDays: Int? = nil,
                      lifecycleState: HabitLifecycleState = .active,
                      startDate: Date = Date()) -> HabitEntity {
         if lifecycleState == .active {
@@ -95,6 +96,7 @@ final class HabitRepository {
         entity.reminderTimes = ReminderTimesCodec.encode(Array(reminderTimes.prefix(2)))
         entity.isActive = lifecycleState == .active
         entity.lifecycleState = lifecycleState.rawValue
+        entity.commitmentDurationDays = Int16(commitmentDurationDays ?? 0)
 
         PersistenceController.shared.save(context: context)
         return entity
@@ -105,7 +107,9 @@ final class HabitRepository {
                      iconSymbol: String? = nil,
                      colorHex: String? = nil,
                      dayStartHour: Int? = nil,
-                     reminderTimes: [ReminderTime]? = nil) {
+                     reminderTimes: [ReminderTime]? = nil,
+                     commitmentDurationDays: Int? = nil,
+                     clearsCommitmentDuration: Bool = false) {
         if let name {
             habit.name = name
         }
@@ -120,6 +124,11 @@ final class HabitRepository {
         }
         if let reminderTimes {
             habit.reminderTimes = ReminderTimesCodec.encode(Array(reminderTimes.prefix(2)))
+        }
+        if clearsCommitmentDuration {
+            habit.commitmentDurationDays = 0
+        } else if let commitmentDurationDays {
+            habit.commitmentDurationDays = Int16(commitmentDurationDays)
         }
 
         PersistenceController.shared.save(context: context)

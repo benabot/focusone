@@ -10,6 +10,7 @@
         <attribute name="reminderTimes" attributeType="String" optional="YES"/>
         <attribute name="isActive" attributeType="Boolean" optional="NO" defaultValueString="YES"/>
         <attribute name="lifecycleState" attributeType="String" optional="YES"/>
+        <attribute name="commitmentDurationDays" attributeType="Integer 16" optional="NO" defaultValueString="0"/>
     </entity>
     <entity name="CompletionEntity" representedClassName="CompletionEntity" syncable="YES" codeGenerationType="none">
         <attribute name="id" attributeType="UUID" optional="YES"/>

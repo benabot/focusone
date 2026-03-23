@@ -260,9 +260,9 @@ private struct SplashShowcaseCard: View {
                 }
 
             HStack(spacing: 8) {
-                ForEach([Theme.defaultThemeHex, "FFB347", "34C9A5"], id: \.self) { hex in
+                ForEach(Array(Theme.freePresets.prefix(3)), id: \.id) { preset in
                     Circle()
-                        .fill(Color(hex: hex))
+                        .fill(Color(hex: preset.primaryHex))
                         .frame(width: 22, height: 22)
                 }
             }
@@ -370,9 +370,9 @@ private struct SetupStepsVisual: View {
             setupRow(symbol: "sparkles", width: 74)
 
             HStack(spacing: 12) {
-                colorDot(Theme.defaultThemeHex)
-                colorDot("FFB347")
-                colorDot("34C9A5")
+                ForEach(Array(Theme.freePresets.prefix(3)), id: \.id) { preset in
+                    colorDot(preset.primaryHex)
+                }
             }
         }
         .padding(.horizontal, 28)

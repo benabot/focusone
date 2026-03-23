@@ -1,0 +1,28 @@
+import SwiftUI
+import StoreKit
+
+class SettingsViewModel: ObservableObject {
+    @Published var premiumAccessState: PremiumAccessState?
+    private let premiumGate: PremiumGate
+
+    init(premiumGate: PremiumGate) {
+        self.premiumGate = premiumGate
+        self.premiumAccessState = premiumGate.currentAccessState
+    }
+
+    func updatePremiumAccess() {
+        // Use premiumGate's currentAccessState instead of optional Bool
+        let accessState = premiumGate.currentAccessState
+        // Example usage where optional Bool was passed before:
+        someFunctionExpectingPremiumAccessState(accessState)
+    }
+
+    func someFunctionExpectingPremiumAccessState(_ state: PremiumAccessState?) {
+        // Implementation here
+    }
+
+    func handleStoreKitAction() {
+        // Use premiumGate or injected store access instead of undefined storeKit
+        premiumGate.performStoreKitAction()
+    }
+}

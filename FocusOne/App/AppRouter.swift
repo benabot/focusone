@@ -3,6 +3,7 @@ import SwiftUI
 struct AppRouter: View {
     @Environment(\.managedObjectContext) private var context
     @Environment(\.scenePhase) private var scenePhase
+    @EnvironmentObject private var storeKit: StoreKitService
     @AppStorage(AppStorageKeys.hasOnboarded) private var hasOnboarded = false
 
     private enum Route: Equatable {
@@ -48,6 +49,7 @@ struct AppRouter: View {
     @State private var selectedTab: MainTab = .home
     @State private var premiumPrompt: PremiumPromptKind?
     @State private var showPaywall = false
+    @State private var paywallHighlightYearly = false
     @State private var premiumPromptCheckToken = 0
 
     var body: some View {
@@ -96,6 +98,10 @@ struct AppRouter: View {
         }
         .task(id: premiumPromptCheckToken) {
             guard premiumPromptCheckToken > 0 else { return }
+            await storeKit.updateEntitlementState()
+            AppGroupStorage.shared.updateAdvancedWidgetsAccess(
+                PremiumGate(storeKitEntitlementState: storeKit.entitlementState).canAccess(.advancedWidgets)
+            )
             try? await Task.sleep(nanoseconds: 250_000_000)
             await maybePresentPremiumPromptIfNeeded()
         }
@@ -110,6 +116,7 @@ struct AppRouter: View {
                 dismissTitle: content.dismissTitle,
                 accentHex: Theme.presets[3].primaryHex
             ) {
+                paywallHighlightYearly = prompt == .endingSoon || prompt == .expired
                 premiumPrompt = nil
                 showPaywall = true
             } onDismiss: {
@@ -120,7 +127,8 @@ struct AppRouter: View {
             .presentationDetents([.medium])
         }
         .sheet(isPresented: $showPaywall) {
-            PaywallView()
+            PaywallView(highlightYearly: paywallHighlightYearly)
+                .environmentObject(storeKit)
         }
     }
 
@@ -216,14 +224,14 @@ struct AppRouter: View {
     private func maybePresentPremiumPromptIfNeeded() {
         guard route == .mainTabs, premiumPrompt == nil, !showPaywall else { return }
 
-        let premiumGate = PremiumGate()
+        let premiumGate = PremiumGate(storeKitEntitlementState: storeKit.entitlementState)
         guard let prompt = premiumGate.pendingLifecyclePrompt() else { return }
         premiumPrompt = prompt
     }
 
     @MainActor
     private func markPromptAsShown(_ prompt: PremiumPromptKind) {
-        var premiumGate = PremiumGate()
+        var premiumGate = PremiumGate(storeKitEntitlementState: storeKit.entitlementState)
         premiumGate.markPromptShown(prompt)
     }
 
@@ -232,12 +240,15 @@ struct AppRouter: View {
 
         switch prompt {
         case .midTrial:
-            let format = L10n.text("premium.prompt.trial.body")
+            let endDate = gate.trialEndDateString() ?? ""
+            let daysLeft = gate.daysRemainingText() ?? ""
+            let bodyFormat = L10n.text("premium.prompt.trial.body")
+            let secondaryFormat = L10n.text("premium.prompt.trial.secondary.format")
             return PremiumPromptContent(
                 badge: L10n.text("premium.trial.badge"),
                 title: L10n.text("premium.prompt.trial.title"),
-                body: String.localizedStringWithFormat(format, gate.trialEndDateString() ?? ""),
-                secondary: L10n.text("premium.prompt.trial.secondary"),
+                body: String.localizedStringWithFormat(bodyFormat, endDate),
+                secondary: String.localizedStringWithFormat(secondaryFormat, daysLeft, endDate),
                 primaryTitle: L10n.text("premium.prompt.trial.cta"),
                 dismissTitle: L10n.text("premium.prompt.trial.dismiss")
             )
@@ -267,6 +278,7 @@ struct AppRouter_Previews: PreviewProvider {
     static var previews: some View {
         AppRouter()
             .environment(\.managedObjectContext, PreviewSupport.context)
+            .environmentObject(StoreKitService())
     }
 }
 

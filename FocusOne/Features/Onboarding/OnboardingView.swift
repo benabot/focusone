@@ -7,8 +7,6 @@ struct OnboardingView: View {
     let onFinished: () -> Void
     let onCancel: (() -> Void)?
 
-    private let iconOptions = HabitIcon.availableSymbols
-
     init(context: NSManagedObjectContext,
          mode: OnboardingMode = .create,
          onFinished: @escaping () -> Void,
@@ -22,7 +20,6 @@ struct OnboardingView: View {
     var body: some View {
         OnboardingContent(
             viewModel: viewModel,
-            iconOptions: iconOptions,
             mode: mode,
             onFinished: onFinished,
             onCancel: onCancel
@@ -32,20 +29,22 @@ struct OnboardingView: View {
 
 private struct OnboardingContent: View {
     @ObservedObject var viewModel: OnboardingViewModel
-    let iconOptions: [String]
     let mode: OnboardingMode
     let onFinished: () -> Void
     let onCancel: (() -> Void)?
 
+    @EnvironmentObject private var storeKit: StoreKitService
     @Environment(\.colorScheme) private var colorScheme
     @FocusState private var isNameFocused: Bool
     @State private var showRemindersSheet = false
     @State private var showDayStartSheet = false
+    @State private var showPaywall = false
     @State private var footerHeight: CGFloat = 0
 
     private let iconColumns = Array(repeating: GridItem(.fixed(48), spacing: 12), count: 5)
-    private var displayedIconOptions: [String] {
-        Array(iconOptions.prefix(10))
+
+    private var premiumUnlocked: Bool {
+        PremiumGate().canAccess(.customization)
     }
 
     private var isNameValid: Bool {
@@ -136,6 +135,7 @@ private struct OnboardingContent: View {
                     nameSection
                     iconSection
                     themeSection
+                    commitmentSection
                     preferencesSection
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -178,6 +178,10 @@ private struct OnboardingContent: View {
         .sheet(isPresented: $showDayStartSheet) {
             DayStartSheet(viewModel: viewModel)
                 .presentationDetents([.medium])
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+                .environmentObject(storeKit)
         }
         .onChange(of: viewModel.habitName) {
             if viewModel.errorMessage != nil {
@@ -231,15 +235,21 @@ private struct OnboardingContent: View {
 
             ConfigurationSurface {
                 LazyVGrid(columns: iconColumns, alignment: .leading, spacing: 12) {
-                    ForEach(displayedIconOptions, id: \.self) { symbol in
+                    ForEach(HabitIcon.availableSymbols, id: \.self) { symbol in
+                        let isPremium = HabitIcon.isPremiumSymbol(symbol)
+                        let isLocked = isPremium && !premiumUnlocked
+
                         IconChip(
                             symbol: symbol,
                             isSelected: viewModel.selectedIconSymbol == symbol,
+                            isLocked: isLocked,
                             tintHex: viewModel.selectedThemeHex
                         ) {
                             withAnimation(.spring(response: 0.28, dampingFraction: 0.72)) {
                                 viewModel.selectedIconSymbol = symbol
                             }
+                        } onLockedTap: {
+                            showPaywall = true
                         }
                     }
                 }
@@ -252,21 +262,30 @@ private struct OnboardingContent: View {
             FormSectionTitle(title: L10n.text("onboarding.theme"))
 
             ConfigurationSurface(padding: Theme.spacingS) {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
-                        ForEach(Theme.presets) { preset in
-                            ColorDot(
-                                hex: preset.primaryHex,
-                                isSelected: viewModel.selectedThemeHex == preset.primaryHex
-                            ) {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
-                                viewModel.selectedThemeHex = preset.primaryHex
-                            }
-                            }
-                            .accessibilityLabel(L10n.text(preset.nameKey))
-                        }
+                ThemePalettePicker(
+                    selectedHex: viewModel.selectedThemeHex,
+                    canAccessPremiumThemes: premiumUnlocked
+                ) { hex in
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                        viewModel.selectedThemeHex = hex
                     }
-                    .padding(.horizontal, 2)
+                } onLockedTap: {
+                    showPaywall = true
+                }
+            }
+        }
+    }
+
+    private var commitmentSection: some View {
+        VStack(alignment: .leading, spacing: Theme.spacingS) {
+            FormSectionTitle(title: L10n.text("onboarding.commitment"))
+
+            ConfigurationSurface(padding: Theme.spacingS) {
+                CommitmentDurationPicker(
+                    selectedDays: $viewModel.selectedCommitmentDurationDays,
+                    canAccessPremiumDurations: premiumUnlocked
+                ) {
+                    showPaywall = true
                 }
             }
         }
@@ -399,13 +418,15 @@ private struct RoutinePreviewCard: View {
 private struct IconChip: View {
     let symbol: String
     let isSelected: Bool
+    let isLocked: Bool
     let tintHex: String
     let action: () -> Void
+    let onLockedTap: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        Button(action: action) {
+        Button(action: isLocked ? onLockedTap : action) {
             Image(systemName: symbol)
                 .font(.system(size: 19, weight: .semibold))
                 .foregroundStyle(
@@ -423,47 +444,86 @@ private struct IconChip: View {
                         .stroke(isSelected ? Color(hex: tintHex) : Color.clear, lineWidth: 2)
                 }
                 .scaleEffect(isSelected ? 1.06 : 1)
+                .overlay(alignment: .bottomTrailing) {
+                    if isLocked {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 16, height: 16)
+                            .background(
+                                Circle()
+                                    .fill(Color(hex: Theme.freePresets.last?.primaryHex ?? "FF8A5B"))
+                            )
+                    }
+                }
         }
         .buttonStyle(.plain)
+        .accessibilityHint(isLocked ? L10n.text("onboarding.icon.locked") : "")
         .animation(.spring(response: 0.28, dampingFraction: 0.72), value: isSelected)
     }
 }
 
-private struct ColorDot: View {
-    let hex: String
-    let isSelected: Bool
-    let action: () -> Void
+private struct CommitmentDurationPicker: View {
+    @Binding var selectedDays: Int?
+    let canAccessPremiumDurations: Bool
+    let onLockedTap: () -> Void
+
+    private let options = CommitmentDurationOption.allCases
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        Button(action: action) {
-            ZStack {
-                Circle()
-                    .fill(Color(hex: hex))
-                    .frame(width: 34, height: 34)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(options) { option in
+                    let isSelected = selectedDays == option.durationDays
+                    let isLocked = option.isPremium && !canAccessPremiumDurations
 
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(.white)
-                }
-            }
-            .frame(width: 42, height: 42)
-            .overlay {
-                if isSelected {
-                    ZStack {
-                        Circle()
-                            .stroke(.white, lineWidth: 2)
-                            .frame(width: 38, height: 38)
-
-                        Circle()
-                            .stroke(Color(hex: hex).opacity(0.42), lineWidth: 2)
-                            .frame(width: 42, height: 42)
+                    Button {
+                        if isLocked {
+                            onLockedTap()
+                        } else {
+                            selectedDays = option.durationDays
+                        }
+                    } label: {
+                        Text(L10n.text(option.titleKey))
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .foregroundStyle(isLocked ? Theme.textSecondary(for: colorScheme) : Theme.textPrimary(for: colorScheme))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(
+                                Capsule()
+                                    .fill(
+                                        isSelected
+                                            ? Color(hex: Theme.presets[3].primaryHex).opacity(0.18)
+                                            : Color.white.opacity(0.65)
+                                    )
+                            )
+                            .overlay(
+                                Capsule()
+                                    .stroke(
+                                        isSelected
+                                            ? Color(hex: Theme.presets[3].primaryHex)
+                                            : Color.white.opacity(0.5),
+                                        lineWidth: 1
+                                    )
+                            )
+                            .overlay(alignment: .topTrailing) {
+                                if isLocked {
+                                    Image(systemName: "lock.fill")
+                                        .font(.system(size: 7, weight: .bold))
+                                        .foregroundStyle(.white)
+                                        .padding(4)
+                                        .background(Circle().fill(Color(hex: Theme.presets[3].primaryHex)))
+                                        .offset(x: 8, y: -8)
+                                }
+                            }
                     }
+                    .buttonStyle(.plain)
+                    .opacity(isLocked && !isSelected ? 0.9 : 1)
                 }
             }
+            .padding(.horizontal, 2)
         }
-        .buttonStyle(.plain)
-        .animation(.spring(response: 0.25, dampingFraction: 0.76), value: isSelected)
     }
 }
 
@@ -717,5 +777,6 @@ private struct DayStartSheet: View {
 struct OnboardingView_Previews: PreviewProvider {
     static var previews: some View {
         OnboardingView(context: PreviewSupport.context, onFinished: {})
+            .environmentObject(StoreKitService())
     }
 }

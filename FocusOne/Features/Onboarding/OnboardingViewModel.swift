@@ -14,6 +14,7 @@ final class OnboardingViewModel: ObservableObject {
     @Published var habitName = ""
     @Published var selectedIconSymbol = HabitIcon.defaultSymbol
     @Published var selectedThemeHex = Theme.defaultThemeHex
+    @Published var selectedCommitmentDurationDays: Int?
     @Published var reminderTimes: [Date] = []
     @Published var dayStartHour = 4
     @Published var notificationsEnabled = true
@@ -79,14 +80,42 @@ final class OnboardingViewModel: ObservableObject {
 
         activeHabitEntity = active
         let habit = active.toDomain()
+        let premiumUnlocked = PremiumGate().canAccess(.customization)
+        let normalizedThemeHex = Theme.effectiveThemeHex(
+            for: habit.colorHex,
+            canAccessPremiumThemes: premiumUnlocked
+        )
+        let normalizedIconSymbol = HabitIcon.effectiveSymbol(
+            for: habit.iconSymbol,
+            canAccessPremiumIcons: premiumUnlocked
+        )
+        let normalizedDuration = CommitmentDurationOption.effectiveDurationDays(
+            for: habit.commitmentDurationDays,
+            canAccessPremiumDuration: premiumUnlocked
+        )
+
         habitName = habit.name
-        selectedIconSymbol = habit.iconSymbol
-        selectedThemeHex = habit.colorHex
+        selectedIconSymbol = normalizedIconSymbol
+        selectedThemeHex = normalizedThemeHex
+        selectedCommitmentDurationDays = normalizedDuration
         dayStartHour = habit.dayStartHour
         reminderTimes = habit.reminderTimes.compactMap {
             Calendar.current.date(bySettingHour: $0.hour, minute: $0.minute, second: 0, of: Date())
         }
         initialReminderTimes = habit.reminderTimes.sorted()
+
+        if normalizedThemeHex != habit.colorHex ||
+            normalizedIconSymbol != habit.iconSymbol ||
+            normalizedDuration != habit.commitmentDurationDays {
+            let clearsCommitmentDuration = normalizedDuration == nil && habit.commitmentDurationDays != nil
+            repository.updateHabit(
+                active,
+                iconSymbol: normalizedIconSymbol,
+                colorHex: normalizedThemeHex,
+                commitmentDurationDays: normalizedDuration,
+                clearsCommitmentDuration: clearsCommitmentDuration
+            )
+        }
     }
 
     private var storedNotificationsEnabled: Bool {
@@ -105,6 +134,7 @@ final class OnboardingViewModel: ObservableObject {
             colorHex: selectedThemeHex,
             dayStartHour: dayStartHour,
             reminderTimes: reminderModels,
+            commitmentDurationDays: selectedCommitmentDurationDays,
             lifecycleState: .active
         )
 
@@ -127,6 +157,7 @@ final class OnboardingViewModel: ObservableObject {
             colorHex: selectedThemeHex,
             dayStartHour: dayStartHour,
             reminderTimes: reminderModels,
+            commitmentDurationDays: selectedCommitmentDurationDays,
             lifecycleState: .upcoming
         )
 
@@ -147,7 +178,9 @@ final class OnboardingViewModel: ObservableObject {
             iconSymbol: selectedIconSymbol,
             colorHex: selectedThemeHex,
             dayStartHour: dayStartHour,
-            reminderTimes: reminderModels
+            reminderTimes: reminderModels,
+            commitmentDurationDays: selectedCommitmentDurationDays,
+            clearsCommitmentDuration: selectedCommitmentDurationDays == nil && activeHabitEntity.commitmentDurationDays > 0
         )
 
         let habit = activeHabitEntity.toDomain()
@@ -189,7 +222,8 @@ final class OnboardingViewModel: ObservableObject {
                 iconSymbol: habit.iconSymbol,
                 currentStreak: streak,
                 doneToday: doneToday,
-                themeHex: habit.colorHex
+                themeHex: habit.colorHex,
+                advancedWidgetsEnabled: PremiumGate().canAccess(.advancedWidgets)
             )
         )
     }
